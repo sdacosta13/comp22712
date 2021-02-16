@@ -1,0 +1,57 @@
+KMD
+00000000: EB000000    ; BL lcd_blank
+00000004: EF000002    ; svc 2
+00000008:             ; 
+00000008:             ; 
+00000008:             ; lcd_blank
+00000008: E92D0007    ; PUSH{R0 - R2}
+0000000C: E59F0024    ; LDR R0, addr_LCD
+00000010: E59F1024    ; LDR R1, addr_LCD_end
+00000014: E5DF20E3    ; LDRB R2, BLACK
+00000018:             ; 
+00000018:             ; fill
+00000018: E4C02001    ; STRB R2, [R0], #1
+0000001C: E1500001    ; CMP R0, R1
+00000020: 1AFFFFFC    ; BNE fill
+00000024: E5402000    ; STRB R2, [R0]
+00000028:             ; 
+00000028: E8BD1FFF    ; POP{R0 - R12}
+0000002C: E1A0F00E    ; MOV PC, LR
+00000030:             ; 
+00000030: 01          ; bmask0      DEFB &01
+00000031: 02          ; bmask1      DEFB &02
+00000032: 04          ; bmask2      DEFB &04
+00000033: 08          ; bmask3      DEFB &08
+00000034: 10          ; bmask4      DEFB &10
+00000035: 20          ; bmask5      DEFB &20
+00000036: 40          ; bmask6      DEFB &40
+00000037: 80          ; bmask7      DEFB &80
+00000038: AC000000    ; addr_LCD        DEFW 0xAC00_0000
+0000003C: AC0383FF    ; addr_LCD_end    DEFW 0xAC03_83FF
+00000040: 000003C0    ; LCD_width       DEFW 960
+00000044: 000000F0    ; LCD_length      DEFW 240
+00000048:             ; WHITE           EQU     &00
+00000048:             ; BLACK           EQU     &FF
+00000048:             ; FONT_WIDTH      EQU     7
+00000048:             ; FONT_HEIGHT     EQU     8
+00000048:             ; 
+
+Symbol Table: Labels
+: lcd_blank                         00000008  Local -- ARM
+: fill                              00000018  Local -- ARM
+: bmask0                            00000030  Local -- ARM
+: bmask1                            00000031  Local -- ARM
+: bmask2                            00000032  Local -- ARM
+: bmask3                            00000033  Local -- ARM
+: bmask4                            00000034  Local -- ARM
+: bmask5                            00000035  Local -- ARM
+: bmask6                            00000036  Local -- ARM
+: bmask7                            00000037  Local -- ARM
+: addr_LCD                          00000038  Local -- ARM
+: addr_LCD_end                      0000003C  Local -- ARM
+: LCD_width                         00000040  Local -- ARM
+: LCD_length                        00000044  Local -- ARM
+: WHITE                             00000000  Value
+: BLACK                             000000FF  Value
+: FONT_WIDTH                        00000007  Value
+: FONT_HEIGHT                       00000008  Value

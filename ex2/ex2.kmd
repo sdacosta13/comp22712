@@ -1,0 +1,50 @@
+KMD
+00000000:             ; 
+00000000: E59F5034    ;           LDR R5, addr_CTRL
+00000004: E59F602C    ;           LDR R6, addr_LED
+00000008: E5DF2035    ;           LDRB R2, bmask1
+0000000C: E5DF3035    ;           LDRB R3, bmask5
+00000010: E0222003    ;           EOR  R2, R2, R3
+00000014: E5452000    ;           STRB R2, [R5]
+00000018: E5DF002C    ;           LDRB R0, H
+0000001C: E5460000    ;           STRB R0, [R6]
+00000020: E5561000    ;           LDRB R1, [R6]
+00000024: E5DF4018    ;           LDRB R4, bmask0
+00000028: E0244001    ;           EOR  R4, R4, R1
+0000002C: E5464000    ;           STRB R4, [R6]
+00000030: E5461000    ;           STRB R1, [R6]
+00000034: EF000002    ;           SVC 2
+00000038:             ; 
+00000038:             ; 
+00000038:             ;           ALIGN
+00000038:             ; 
+00000038: AC038400    ;           addr_LED    DEFW 0xAC03_8400 ; address of LEDS
+0000003C: AC038401    ;           addr_CTRL   DEFW 0xAC03_8401
+00000040: F1003000    ;           addr_but    DEFW 0xF100_3000
+00000044:             ;           ALIGN
+00000044:             ;           ; masks used to flip the nth bit of a byte
+00000044: 01          ;           bmask0      DEFB &01
+00000045: 02          ;           bmask1      DEFB &02
+00000046: 04          ;           bmask2      DEFB &04
+00000047: 08          ;           bmask3      DEFB &08
+00000048: 10          ;           bmask4      DEFB &10
+00000049: 20          ;           bmask5      DEFB &20
+0000004A: 40          ;           bmask6      DEFB &40
+0000004B: 80          ;           bmask7      DEFB &80
+0000004C: 48          ;           H           DEFB &48
+00000050:             ;           ALIGN
+00000050:             ; 
+
+Symbol Table: Labels
+: addr_LED                          00000038  Local -- ARM
+: addr_CTRL                         0000003C  Local -- ARM
+: addr_but                          00000040  Local -- ARM
+: bmask0                            00000044  Local -- ARM
+: bmask1                            00000045  Local -- ARM
+: bmask2                            00000046  Local -- ARM
+: bmask3                            00000047  Local -- ARM
+: bmask4                            00000048  Local -- ARM
+: bmask5                            00000049  Local -- ARM
+: bmask6                            0000004A  Local -- ARM
+: bmask7                            0000004B  Local -- ARM
+: H                                 0000004C  Local -- ARM
