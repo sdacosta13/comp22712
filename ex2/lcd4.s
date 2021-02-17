@@ -1,5 +1,5 @@
 
-ADRL R0, font_65
+ADRL R0, font_32
 l3
 BL printc
 ADD R0, R0, #7
@@ -9,49 +9,65 @@ SVC 2
 printc ;takes parameter R0 <- address of character
 PUSH {R1 - R13}
 ;R0 byte address
-MOV R1, #0 ; cursorpos
-MOV R2, #0 ; cursorpos address
+MOV R1, #0 ; cursorposx
+MOV R2, #0 ; cursorposy
 MOV R3, #0 ; byte counter
 MOV R4, #0 ; bit counter
 MOV R5, #0 ; font data
 MOV R6, #0 ; mask addr
 MOV R7, #0 ; mask data
-MOV R8, #0 ; CWR
-MOV R9, #0 ; CWR
-MOV R10, #0 ; CWR
+MOV R8, #0 ; base address
+MOV R9, #0 ;
+MOV R10, #0 ;
 MOV R11, #0
 MOV R12, #0
 MOV R13, #0
+;----------
 
-LDR     R11, cursorposx
-LDR     R12, cursorposy
-LDR     R1, cursorpos
-ADRL    R2, cursorpos
-MOV     R3, #0
-MOV     R4, #-1
-ADRL    R6, bmask0
 
+LDR         R1, cursorposx
+LDR         R2, cursorposy
+MOV         R3, #0
+MOV         R4, #-1
+ADRL        R6, bmask0
+; Corrects cursors for newline if needed
+CMP         R1, #40
+SUBGE       R1, R1, #40
+ADDGE       R2, R2, #1
+;calculates base address to draw from
+LDR         R8, LCD_linediff
+MUL         R8, R8, R2
+LDR         R9, charwidth
+MUL         R9, R9, R1
+ADD         R8, R8, R9
+LDR         R9, addr_LCD
+ADD         R8, R8, R9        ;base now in R8, R9 free
+;----
+;handles incrememts of byte and bit
 next
-CMP R4, #7
-MOVEQ R4, #0
-ADDEQ R3, R3, #1
-ADDNE R4, R4, #1
-CMP R3, #7
-BEQ POSTEND
+CMP         R4, #7
+MOVEQ       R4, #0
+ADDEQ       R3, R3, #1
+ADDNE       R4, R4, #1
+CMP         R3, #7
+BEQ         POSTEND
 
-start
-LDRB    R5, [R0, R3] ;point to current byte
-LDRB    R7, [R6, R4] ;point to current mask
-AND     R8, R7, R5
 
-MOV R10, #3
-MUL R9, R10, R3
-LDR R10, LCD_width
-MUL R10, R10, R4
-ADD R9, R9, R10
-ADD R9, R9, R1 ; R9 contains position to write to/ R10 free for reuse
 
-CMP     R8, R7 ;check if bit n is 1
+
+;
+LDRB        R5, [R0, R3] ;loads the font byte
+LDRB        R7, [R6, R4] ;loads the mask
+AND         R5, R7, R5 ; check the bit
+
+MOV         R9, #3
+MUL         R9, R9, R3
+LDR         R10, LCD_width
+MUL         R10, R10, R4
+ADD         R9, R9, R10
+ADD         R9, R9, R8      ;address to write in R9
+
+CMP         R5, R7
 BEQ high
 BNE low
 
@@ -69,14 +85,21 @@ STRB R10, [R9], #1
 STRB R10, [R9]
 B next
 
-
 POSTEND
 MOV   R10, #3
 MUL   R9, R10, R3
 LDR   R10, LCD_width
 MUL   R10, R10, R4
 ADD   R9, R9, R10
-ADD   R9, R9, R1 ; R9 contains position to write to/ R10 free for reuse
+LDR   R10, addr_LCD
+ADD   R9, R9, R10
+LDR   R11, charwidth
+MUL   R10, R1, R11
+ADD   R9, R10, R9
+LDR   R11, LCD_linediff
+MUL   R10, R2, R11
+ADD   R9, R10, R9
+
 LDRB  R10, BLACK
 STRB  R10, [R9], #1
 STRB  R10, [R9], #1
@@ -85,15 +108,16 @@ ADD   R4, R4, #1
 CMP   R4, #8
 BNE POSTEND
 
-CMP
-ADD R1, R1, #24
+
+ADD   R1, R1, #1
+ADRL  R12, cursorposx
+STR   R1, [R12]
+ADRL  R12, cursorposy
+STR   R2, [R12]
 
 
 
 
-
-STR R1, [R2]
-END
 POP {R1 - R13}
 MOV PC, LR
 
@@ -108,24 +132,6 @@ MOV PC, LR
 
 
 
-
-
-;---------------------------------------
-;used to fill the lcd with white
-lcd_blank
-PUSH{R0 - R2}
-LDR R0, addr_LCD
-LDR R1, addr_LCD_end
-LDRB R2, BLACK
-
-fill
-STRB R2, [R0], #1
-CMP R0, R1
-BNE fill
-STRB R2, [R0]
-
-POP{R0 - R12}
-MOV PC, LR
 ;---------------------------------------
 align
 bmask0      DEFB &01
@@ -136,7 +142,6 @@ bmask4      DEFB &10
 bmask5      DEFB &20
 bmask6      DEFB &40
 bmask7      DEFB &80
-cursorpos       DEFW 0xAC00_0000 ;to be updated
 
 cursorposx      DEFW 0
 cursorposy      DEFW 0
@@ -144,6 +149,7 @@ cursorposy      DEFW 0
 addr_LCD        DEFW 0xAC00_0000
 addr_LCD_end    DEFW 0xAC03_83FF
 LCD_width       DEFW 960
+charwidth       DEFW 24
 LCD_linediff    DEFW 7680
 WHITE           EQU     &00
 BLACK           EQU     &FF
