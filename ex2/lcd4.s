@@ -1,13 +1,14 @@
-
-ADRL R0, font_32
-l3
-BL printc
-ADD R0, R0, #7
-B l3
+ADRL SP, stackend
+ADRL R0, test
+BL printstr
+ADRL R0, backspace
+BL printstr
+ADRL R0, test2
+BL printstr
 SVC 2
 
 printc ;takes parameter R0 <- address of character
-PUSH {R1 - R13}
+PUSH {R1 - R12}
 ;R0 byte address
 MOV R1, #0 ; cursorposx
 MOV R2, #0 ; cursorposy
@@ -21,7 +22,6 @@ MOV R9, #0 ;
 MOV R10, #0 ;
 MOV R11, #0
 MOV R12, #0
-MOV R13, #0
 ;----------
 
 
@@ -118,17 +118,122 @@ STR   R2, [R12]
 
 
 
-POP {R1 - R13}
+POP {R1 - R12}
 MOV PC, LR
 
 
+printstr
+; address at R0
+; assume LR was pushed
+PUSH {R1 - R8}
+PUSH {LR}
+MOV           R8, R0
+printnextc
+LDRB          R1, [R8], #1
+SUBS          R2, R1, #&20
+BLT control
+ADRL          R3, font_32
+MOV           R4, #7
+MUL           R2, R2, R4
+ADD           R0, R3, R2
+BL printc
+B printnextc
 
 
 
+control
+CMP           R1, #00
+BEQ           exitstring
+
+CMP           R1, #&08
+BEQ           c_backspace
+
+CMP           R1, #&09
+BEQ           c_HT
+
+CMP           R1, #&0A
+BEQ           c_LF
+
+CMP           R1, #&0B
+BEQ           c_VT
+
+CMP           R1, #&0C
+BEQ           c_FF
+
+CMP           R1, #&0D
+BEQ           c_CR
+
+;using R5,6,7
+c_backspace
+LDR     R5, cursorposx
+LDR     R6, cursorposy
+CMP     R5, #0
+BNE     subtract
+CMP     R6, #0
+BEQ     quitcontrol
+SUB     R6, R6, #1
+MOV     R5, #39
+B quitcontrol
+
+subtract
+SUB     R5, R5, #1
+quitcontrol
+ADRL    R7, cursorposx
+STR     R5, [R7]
+ADRL    R7, cursorposy
+STR     R6, [R7]
+B printnextc
+
+c_HT
+LDR     R5, cursorposx
+LDR     R6, cursorposy
+ADD     R5, R5, #1
+CMP     R5, #40
+SUBGE   R5, R5, #40
+ADDGE   R6, R6, #1
+ADRL    R7, cursorposx
+STR     R5, [R7]
+ADRL    R7, cursorposy
+STR     R6, [R7]
+B printnextc
+
+c_LF
+LDR     R6, cursorposy
+CMP     R6, #29
+ADDNE   R6, R6, #1
+ADRL    R7, cursorposy
+STR     R6, [R7]
+B printnextc
+
+c_VT
+LDR     R6, cursorposy
+CMP     R6, #0
+SUBGT   R6, R6, #1
+ADRL    R7, cursorposy
+STR     R6, [R7]
+B printnextc
+
+c_FF
+ADRL    R5, addr_LCD
+LDRB    R6, BLACK
+ADRL    R7, addr_LCD_end
+screenblankloop
+STRB    R6, [R5], #1
+CMP     R5, R7
+BNE screenblankloop
+B printnextc
+
+c_CR
+MOV     R6, #0
+ADRL    R7, cursorposx
+STR     R6, [R7]
+B printnextc
 
 
-
-
+exitstring
+POP {LR}
+POP {R1 - R8}
+MOV PC, LR
 
 
 
@@ -155,6 +260,17 @@ WHITE           EQU     &00
 BLACK           EQU     &FF
 FONT_WIDTH      EQU     7
 FONT_HEIGHT     EQU     8
+nullstring      DEFB &00
+backspace       DEFB &08,0
+HT              DEFB &09,0
+LF              DEFB &0A,0
+VT              DEFB &0B,0
+FF              DEFB &0C,0
+CR              DEFB &0D,0
+
+test            DEFB "H",0
+test2           DEFB "C",0
+align
 
 
 font_32 defb 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -253,3 +369,5 @@ font_124 defb 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 font_125 defb 0x41, 0x3e, 0x08, 0x00, 0x00, 0x00, 0x00
 font_126 defb 0x1c, 0x04, 0x1c, 0x10, 0x1c, 0x00, 0x00
 align
+stack DEFS &10000
+stackend
