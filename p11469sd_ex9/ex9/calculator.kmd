@@ -1,0 +1,1880 @@
+KMD
+00000000:             ; INCLUDE ../general/os.s
+00000000:             ; ORIGIN &00000000
+00000000: EA000007    ; B reset_handler                       ; +0   (00)
+00000004: EA000033    ; B undefined_instruction_handler       ; +4   (04)
+00000008: EA000036    ; B svc_handler                         ; +8   (08)
+0000000C: EA000059    ; B prefetch_abort_handler              ; +12  (0C)
+00000010: EA000059    ; B data_abort                          ; +16  (10)
+00000014: E1A00000    ; NOP                                   ; +20  (14)
+00000018: EA000058    ; B IRQ_handler                         ; +24  (18)
+0000001C: EA000093    ; B FIQ_handler                         ; +28  (1C)
+00000020: 00000104    ; SVC_MAX DEFW &00000104
+00000024:             ; reset_handler ; code to reset the proccesor to known state
+00000024: E3A00000    ; MOV R0, #0
+00000028: E3A01000    ; MOV R1, #0
+0000002C: E3A02000    ; MOV R2, #0
+00000030: E3A03000    ; MOV R3, #0
+00000034: E3A04000    ; MOV R4, #0
+00000038: E3A05000    ; MOV R5, #0
+0000003C: E3A06000    ; MOV R6, #0
+00000040: E3A07000    ; MOV R7, #0
+00000044: E3A08000    ; MOV R8, #0
+00000048: E3A09000    ; MOV R9, #0
+0000004C: E3A0A000    ; MOV R10, #0
+00000050: E3A0B000    ; MOV R11, #0
+00000054: E3A0C000    ; MOV R12, #0
+00000058: E59F11DC    ; LDR  R1, addr_timer_compare
+0000005C: E5010000    ; STR  R0, [R1]
+00000060: E59F11D8    ; LDR  R1, addr_timer_enable
+00000064: E5110000    ; LDR  R0, [R1]
+00000068: E3C00001    ; BIC  R0, R0, #&01
+0000006C: E3800001    ; ORR  R0, R0, #&01
+00000070: E5010000    ; STR  R0, [R1]
+00000074:             ; 
+00000074: E28FDF7F    ; ADRL SP, stackend_svc
+00000078: E28DDA03    ; 
+0000007C: E28F0035    ; ADRL R0, FF
+00000080: E2800C45    ; 
+00000084: EB001382    ; BL printstr   ;blanks screen and resets cursorposx and cursorposy
+00000088: E59F11A8    ; LDR  R1, addr_interrupts_mask
+0000008C: E5510000    ; LDRB R0, [R1]
+00000090: E3C000C1    ; BIC  R0, R0, #&C1
+00000094: E38000C1    ; ORR  R0, R0, #&C1
+00000098: E5410000    ; STRB R0, [R1]
+0000009C: E3A01000    ; MOV  R1, #0
+000000A0: E3A00000    ; MOV  R0, #0
+000000A4: E10F0000    ; MRS  R0, CPSR
+000000A8: E3C0000F    ; BIC  R0, R0, #&0F
+000000AC: E3800002    ; ORR  R0, R0, #&02
+000000B0: E121F000    ; MSR  CPSR_c, R0
+000000B4: E28FDF6F    ; ADRL SP, stackend_IRQ
+000000B8: E28DDA03    ; 
+000000BC: E3C0000F    ; BIC  R0, R0, #&0F
+000000C0: E3C000C0    ; BIC  R0, R0, #&C0 ; enable IRQ
+000000C4: E121F000    ; MSR  CPSR_c, R0
+000000C8: E3A00000    ; MOV  R0, #0
+000000CC: E28FDF69    ; ADRL SP, stackend_user
+000000D0: E28DDA02    ; 
+000000D4:             ; 
+000000D4: EA001139    ; B usercode
+000000D8:             ; 
+000000D8:             ; ; Jump to user code
+000000D8:             ; undefined_instruction_handler
+000000D8: E28F0F79    ; ADRL R0, UndefinedError
+000000DC: E2800901    ; 
+000000E0: EB00136B    ; BL printstr
+000000E4: EA00004F    ; B halt
+000000E8:             ; 
+000000E8:             ; svc_handler
+000000E8:             ; ;svcs start at hex 100
+000000E8: E92D4000    ; PUSH {LR}
+000000EC: E92D1000    ; PUSH {R12}
+000000F0: E51EE004    ; LDR R14, [LR, #-4]
+000000F4: E3CEE4FF    ; BIC R14, R14, #&FF000000
+000000F8:             ; svc_entry
+000000F8: E51FC0E0    ; LDR R12, SVC_MAX
+000000FC: E15E000C    ; CMP R14, R12
+00000100: 8A000007    ; BHI SVC_unknown
+00000104: E24EEC01    ; SUB R14, R14, #&100 ;normalising base to avoid predefined svcs
+00000108: E08FE10E    ; ADD R14, PC, R14, LSL #2
+0000010C: E59EF000    ; LDR PC, [R14, #0]
+00000110:             ; 
+00000110:             ; jump_t
+00000110: 00000124    ; DEFW SVC_0 ;halt
+00000114: 00000128    ; DEFW SVC_1 ;printstr
+00000118: 00000144    ; DEFW SVC_2 ;timer
+0000011C: 00000160    ; DEFW SVC_3 ;buttons
+00000120: 00000174    ; DEFW SVC_4
+00000124:             ; ; Move back to usercode
+00000124:             ; ; MOVS PC, LR ; special case
+00000124:             ; SVC_0
+00000124:             ; SVC_unknown
+00000124: EA00003F    ; B halt
+00000128:             ; SVC_1
+00000128: EB001359    ; BL printstr
+0000012C: E8BD1000    ; POP{R12}
+00000130: E8BD4000    ; POP{LR}
+00000134: E1B0F00E    ; MOVS PC, LR
+00000138: EA00003A    ; B halt
+0000013C:             ; 
+0000013C: F1001010    ; addr_timer          DEFW 0xF1001010
+00000140: F1003000    ; addr_ABCDButtons    DEFW 0xF1003000
+00000144:             ; SVC_2 ;move timer into R0
+00000144: E92D003E    ; PUSH {R1 - R5}
+00000148: E51F1014    ; LDR R1, addr_timer
+0000014C: E5110000    ; LDR R0, [R1] ; I know that this should be LDRB, however for some reason this causes a data abor
+                      ; t
+00000150: E8BD003E    ; POP{R1 - R5}
+00000154: E8BD1000    ; POP {R12}
+00000158: E8BD4000    ; POP {LR}
+0000015C: E1B0F00E    ; MOVS PC, LR
+00000160:             ; 
+00000160:             ; SVC_3 ; move the ABCD buttons into R0
+00000160: E51F0028    ; LDR R0, addr_ABCDButtons
+00000164: E5100000    ; LDR R0, [R0]
+00000168: E8BD1000    ; POP {R12}
+0000016C: E8BD4000    ; POP {LR}
+00000170: E1B0F00E    ; MOVS PC, LR
+00000174:             ; SVC_4
+00000174: EA00002B    ; B halt
+00000178:             ; 
+00000178:             ; prefetch_abort_handler
+00000178: EA00002A    ; B halt
+0000017C:             ; 
+0000017C:             ; data_abort
+0000017C: EA000029    ; B halt
+00000180:             ; 
+00000180:             ; 
+00000180:             ; IRQ_handler
+00000180: E92D1FFF    ; PUSH {R0 - R12}
+00000184: E59F00A8    ; LDR R0,  addr_interrupts
+00000188: E5501000    ; LDRB R1, [R0]
+0000018C: E2012001    ; AND R2, R1, #&01
+00000190: E3520001    ; CMP R2, #01
+00000194: 1A000020    ; BNE nextIRQ
+00000198:             ; ;if timercompare do:
+00000198:             ; ;   Poll keyboard
+00000198:             ; 
+00000198:             ; ;poll keyboard pseduo code
+00000198:             ; ; y = 0x20
+00000198:             ; ; for(a = 0; a < 3; a++ ){
+00000198:             ; ;   x = 0x01
+00000198:             ; ;   for(b = 0; b < 4; b++ ){
+00000198:             ; ;     write y to F1002004
+00000198:             ; ;     temp = retrieve from F1002004
+00000198:             ; ;     temp = temp and x
+00000198:             ; ;     doinc()
+00000198:             ; ;     x LSL 1
+00000198:             ; ;   y LSL 1
+00000198:             ; 
+00000198:             ; 
+00000198:             ; ; this should be able to account for multiple key keypresses
+00000198:             ; ; i have no idea if it does as i cant test it, i only have 1 cursor
+00000198: E59F00A4    ; LDR R0, addr_keyboard_matrix
+0000019C: E3A0101F    ; MOV R1, #&1F
+000001A0: E5401000    ; STRB R1, [R0] ;set direction to out
+000001A4:             ; ;test line 7
+000001A4: E2805004    ; ADD  R5, R0, #4     ;get address 0xF1002004
+000001A8: E28F0098    ; ADRL R0, keypresses ;address table to increment
+000001AC: E3A01020    ; MOV  R1, #&20       ;y starts at bit 5 active
+000001B0: E3A02000    ; MOV  R2, #0         ;counter a
+000001B4: E3A09000    ; MOV  R9, #0
+000001B8:             ; aloop
+000001B8: E3A03001    ; MOV  R3, #&01       ;reset x
+000001BC: E3A04000    ; MOV  R4, #0         ;counter b
+000001C0:             ; bloop
+000001C0:             ; ;main body
+000001C0: E5451000    ; STRB R1, [R5]
+000001C4: E5556000    ; LDRB R6, [R5] ; need to check this for keypresses
+000001C8: E0067003    ; AND  R7, R6, R3
+000001CC: E1570003    ; CMP  R7, R3 ;if the same then bit is high and increment needed
+000001D0:             ; ; the section that follows implements doinc()
+000001D0:             ; ; function doinc()
+000001D0:             ; ; if(increment needed):
+000001D0:             ; ;   read val stored
+000001D0:             ; ;   if( val != 255 ) store val + 1
+000001D0:             ; ; else:
+000001D0:             ; ;   read val stored
+000001D0:             ; ;   if( val != 0 ) store val -1
+000001D0:             ; 
+000001D0: 0A000004    ; BEQ doinc
+000001D4:             ; ;dodec
+000001D4: E5508000    ; LDRB  R8, [R0]
+000001D8: E3580000    ; CMP   R8, #0
+000001DC: 12488001    ; SUBNE R8, R8, #1
+000001E0: E5408000    ; STRB  R8, [R0]
+000001E4: EA000003    ; B skipinc
+000001E8:             ; doinc
+000001E8: E5508000    ; LDRB R8, [R0]
+000001EC: E3580020    ; CMP R8, #32 ;max val
+000001F0: 12888001    ; ADDNE R8, R8, #1
+000001F4: E5408000    ; STRB R8, [R0]
+000001F8:             ; 
+000001F8:             ; skipinc ;doinc ends
+000001F8: E2800001    ; ADD R0, R0, #1 ;lazily increment address, the table should be in the right order
+000001FC: E0893083    ; ADD R3, R9, R3, LSL #1  ; x = x * 2
+00000200:             ; 
+00000200: E2844001    ; ADD R4, R4, #1 ;end bloop conditions
+00000204: E3540004    ; CMP R4, #4
+00000208: 1AFFFFEC    ; BNE bloop
+0000020C: E0891081    ; ADD R1, R9, R1, LSL #1  ; y = y * 2
+00000210: E2822001    ; ADD R2, R2, #1 ;end aloop conditions
+00000214: E3520003    ; CMP R2, #3
+00000218: 1AFFFFE6    ; BNE aloop
+0000021C:             ; 
+0000021C:             ; 
+0000021C:             ; ;STRB R1, [R0]
+0000021C:             ; nextIRQ
+0000021C: E8BD1FFF    ; POP {R0 - R12}
+00000220: E25EF004    ; SUBS PC, LR, #4 ;return to usercode
+00000224:             ; 
+00000224: EAFFFFFF    ; B halt
+00000228:             ; 
+00000228:             ; 
+00000228:             ; halt
+00000228: E1A00000    ; MOV R0, R0
+0000022C: EAFFFFFD    ; B halt
+00000230:             ; checkTable
+00000230: 01          ; DEFB 1
+00000231: 02          ; DEFB 2
+00000232: 04          ; DEFB 4
+00000233: 08          ; DEFB 8
+00000234:             ; 
+00000234:             ; 
+00000234: F2000000    ; addr_interrupts      DEFW 0xF2000000
+00000238: F2000001    ; addr_interrupts_mask DEFW 0xF2000001
+0000023C: F1001014    ; addr_timer_compare   DEFW 0xF1001014
+00000240: F100100C    ; addr_timer_enable    DEFW 0xF100100C ;bit 0 = 1 means timer enabled
+00000244: F1002000    ; addr_keyboard_matrix DEFW 0xF1002000
+00000248:             ; 
+00000248:             ; keypresses
+00000248: 00          ; k_3    DEFB 0
+00000249: 00          ; k_6    DEFB 0
+0000024A: 00          ; k_9    DEFB 0
+0000024B: 00          ; k_hash DEFB 0
+0000024C: 00          ; k_2    DEFB 0
+0000024D: 00          ; k_5    DEFB 0
+0000024E: 00          ; k_8    DEFB 0
+0000024F: 00          ; k_0    DEFB 0
+00000250: 00          ; k_1    DEFB 0
+00000251: 00          ; k_4    DEFB 0
+00000252: 00          ; k_7    DEFB 0
+00000253: 00          ; k_star DEFB 0
+00000254:             ; 
+00000254: 00000000    ; data1 DEFW 0
+00000258: 0000000D    ; wipeline DEFW &0D, 0
+0000025C: 00000000    ; 
+00000260: 00000030    ; char0 DEFW &30, 0
+00000264: 00000000    ; 
+00000268: 00000031    ; char1 DEFW &31, 0
+0000026C: 00000000    ; 
+00000270:             ; 
+00000270:             ; 
+00000270:             ; FIQ_handler
+00000270: E1A00000    ; MOV R0, R0
+00000274: EAFFFFFD    ; B FIQ_handler ; not implemented
+00000278:             ; 
+00000278:             ; 
+00000278:             ; ALIGN
+00000278:             ; stack_user DEFS &2000
+00002278:             ; stackend_user
+00002278:             ; stack_svc DEFS &1000
+00003278:             ; stackend_svc
+00003278:             ; stack_IRQ
+00003278:             ; stackend_IRQ DEFS &1000
+00004278:             ; ALIGN
+00004278:             ; data
+00004278: 00000000    ; cursorposx      DEFW 0
+0000427C: 00000000    ; cursorposy      DEFW 0
+00004280:             ; ALIGN
+00004280:             ; ALIGN
+00004280: 4D 65 6D 6F ; MemoryError_pre     DEFB "Memory Error has occured (Prefetch)",0
+00004284: 72 79 20 45 ; 
+00004288: 72 72 6F 72 ; 
+0000428C: 20 68 61 73 ; 
+00004290: 20 6F 63 63 ; 
+00004294: 75 72 65 64 ; 
+00004298: 20 28 50 72 ; 
+0000429C: 65 66 65 74 ; 
+000042A0: 63 68 29 00 ; 
+000042A4: 4D 65 6D 6F ; MemoryError_dat     DEFB "Memory Error has occured (Data)",0
+000042A8: 72 79 20 45 ; 
+000042AC: 72 72 6F 72 ; 
+000042B0: 20 68 61 73 ; 
+000042B4: 20 6F 63 63 ; 
+000042B8: 75 72 65 64 ; 
+000042BC: 20 28 44 61 ; 
+000042C0: 74 61 29 00 ; 
+000042C4:             ; ALIGN
+000042C4: 55 6E 64 65 ; UndefinedError  DEFB "Undefined Instruction encountered",0
+000042C8: 66 69 6E 65 ; 
+000042CC: 64 20 49 6E ; 
+000042D0: 73 74 72 75 ; 
+000042D4: 63 74 69 6F ; 
+000042D8: 6E 20 65 6E ; 
+000042DC: 63 6F 75 6E ; 
+000042E0: 74 65 72 65 ; 
+000042E4: 64 00       ; 
+000042E8:             ; ALIGN
+000042E8:             ; INCLUDE characterDefinitions.s
+000042E8: 00 00 00 00 ; font_32 defb 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000042EC: 00 00 00    ; 
+000042EF: 5F 00 00 00 ; font_33 defb 0x5f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000042F3: 00 00 00    ; 
+000042F6: 03 00 03 00 ; font_34 defb 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00
+000042FA: 00 00 00    ; 
+000042FD: 14 7F 14 7F ; font_35 defb 0x14, 0x7f, 0x14, 0x7f, 0x14, 0x00, 0x00
+00004301: 14 00 00    ; 
+00004304: 6F 49 C9 7B ; font_36 defb 0x6f, 0x49, 0xc9, 0x7b, 0x00, 0x00, 0x00
+00004308: 00 00 00    ; 
+0000430B: 63 13 08 64 ; font_37 defb 0x63, 0x13, 0x08, 0x64, 0x63, 0x00, 0x00
+0000430F: 63 00 00    ; 
+00004312: 7F C9 49 63 ; font_38 defb 0x7f, 0xc9, 0x49, 0x63, 0x00, 0x00, 0x00
+00004316: 00 00 00    ; 
+00004319: 03 00 00 00 ; font_39 defb 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+0000431D: 00 00 00    ; 
+00004320: 3E 41 00 00 ; font_40 defb 0x3e, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00
+00004324: 00 00 00    ; 
+00004327: 41 3E 00 00 ; font_41 defb 0x41, 0x3e, 0x00, 0x00, 0x00, 0x00, 0x00
+0000432B: 00 00 00    ; 
+0000432E: 0A 04 1F 04 ; font_42 defb 0x0a, 0x04, 0x1f, 0x04, 0x0a, 0x00, 0x00
+00004332: 0A 00 00    ; 
+00004335: 08 08 3E 08 ; font_43 defb 0x08, 0x08, 0x3e, 0x08, 0x08, 0x00, 0x00
+00004339: 08 00 00    ; 
+0000433C: C0 00 00 00 ; font_44 defb 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00004340: 00 00 00    ; 
+00004343: 08 08 08 08 ; font_45 defb 0x08, 0x08, 0x08, 0x08, 0x00, 0x00, 0x00
+00004347: 00 00 00    ; 
+0000434A: 40 00 00 00 ; font_46 defb 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+0000434E: 00 00 00    ; 
+00004351: 60 10 08 04 ; font_47 defb 0x60, 0x10, 0x08, 0x04, 0x03, 0x00, 0x00
+00004355: 03 00 00    ; 
+00004358: 7F 41 41 7F ; font_48 defb 0x7f, 0x41, 0x41, 0x7f, 0x00, 0x00, 0x00
+0000435C: 00 00 00    ; 
+0000435F: 01 7F 00 00 ; font_49 defb 0x01, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00
+00004363: 00 00 00    ; 
+00004366: 7B 49 49 6F ; font_50 defb 0x7b, 0x49, 0x49, 0x6f, 0x00, 0x00, 0x00
+0000436A: 00 00 00    ; 
+0000436D: 63 49 49 7F ; font_51 defb 0x63, 0x49, 0x49, 0x7f, 0x00, 0x00, 0x00
+00004371: 00 00 00    ; 
+00004374: 0F 08 08 7F ; font_52 defb 0x0f, 0x08, 0x08, 0x7f, 0x00, 0x00, 0x00
+00004378: 00 00 00    ; 
+0000437B: 6F 49 49 7B ; font_53 defb 0x6f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+0000437F: 00 00 00    ; 
+00004382: 7F 49 49 7B ; font_54 defb 0x7f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+00004386: 00 00 00    ; 
+00004389: 03 01 01 7F ; font_55 defb 0x03, 0x01, 0x01, 0x7f, 0x00, 0x00, 0x00
+0000438D: 00 00 00    ; 
+00004390: 7F 49 49 7F ; font_56 defb 0x7f, 0x49, 0x49, 0x7f, 0x00, 0x00, 0x00
+00004394: 00 00 00    ; 
+00004397: 0F 09 09 7F ; font_57 defb 0x0f, 0x09, 0x09, 0x7f, 0x00, 0x00, 0x00
+0000439B: 00 00 00    ; 
+0000439E: 41 00 00 00 ; font_58 defb 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000043A2: 00 00 00    ; 
+000043A5: C1 00 00 00 ; font_59 defb 0xc1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000043A9: 00 00 00    ; 
+000043AC: 08 14 22 00 ; font_60 defb 0x08, 0x14, 0x22, 0x00, 0x00, 0x00, 0x00
+000043B0: 00 00 00    ; 
+000043B3: 14 14 14 14 ; font_61 defb 0x14, 0x14, 0x14, 0x14, 0x00, 0x00, 0x00
+000043B7: 00 00 00    ; 
+000043BA: 22 14 08 00 ; font_62 defb 0x22, 0x14, 0x08, 0x00, 0x00, 0x00, 0x00
+000043BE: 00 00 00    ; 
+000043C1: 03 59 09 0F ; font_63 defb 0x03, 0x59, 0x09, 0x0f, 0x00, 0x00, 0x00
+000043C5: 00 00 00    ; 
+000043C8: 7F 41 5D 55 ; font_64 defb 0x7f, 0x41, 0x5d, 0x55, 0x5f, 0x00, 0x00
+000043CC: 5F 00 00    ; 
+000043CF: 7F 09 09 7F ; font_65 defb 0x7f, 0x09, 0x09, 0x7f, 0x00, 0x00, 0x00
+000043D3: 00 00 00    ; 
+000043D6: 7F 49 49 77 ; font_66 defb 0x7f, 0x49, 0x49, 0x77, 0x00, 0x00, 0x00
+000043DA: 00 00 00    ; 
+000043DD: 7F 41 41 63 ; font_67 defb 0x7f, 0x41, 0x41, 0x63, 0x00, 0x00, 0x00
+000043E1: 00 00 00    ; 
+000043E4: 7F 41 41 3E ; font_68 defb 0x7f, 0x41, 0x41, 0x3e, 0x00, 0x00, 0x00
+000043E8: 00 00 00    ; 
+000043EB: 7F 49 49 63 ; font_69 defb 0x7f, 0x49, 0x49, 0x63, 0x00, 0x00, 0x00
+000043EF: 00 00 00    ; 
+000043F2: 7F 09 09 03 ; font_70 defb 0x7f, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00
+000043F6: 00 00 00    ; 
+000043F9: 7F 41 49 7B ; font_71 defb 0x7f, 0x41, 0x49, 0x7b, 0x00, 0x00, 0x00
+000043FD: 00 00 00    ; 
+00004400: 7F 08 08 7F ; font_72 defb 0x7f, 0x08, 0x08, 0x7f, 0x00, 0x00, 0x00
+00004404: 00 00 00    ; 
+00004407: 41 7F 41 00 ; font_73 defb 0x41, 0x7f, 0x41, 0x00, 0x00, 0x00, 0x00
+0000440B: 00 00 00    ; 
+0000440E: 60 40 40 7F ; font_74 defb 0x60, 0x40, 0x40, 0x7f, 0x00, 0x00, 0x00
+00004412: 00 00 00    ; 
+00004415: 7F 08 08 77 ; font_75 defb 0x7f, 0x08, 0x08, 0x77, 0x00, 0x00, 0x00
+00004419: 00 00 00    ; 
+0000441C: 7F 40 40 60 ; font_76 defb 0x7f, 0x40, 0x40, 0x60, 0x00, 0x00, 0x00
+00004420: 00 00 00    ; 
+00004423: 7F 01 01 7F ; font_77 defb 0x7f, 0x01, 0x01, 0x7f, 0x01, 0x01, 0x7f
+00004427: 01 01 7F    ; 
+0000442A: 7F 01 01 7F ; font_78 defb 0x7f, 0x01, 0x01, 0x7f, 0x00, 0x00, 0x00
+0000442E: 00 00 00    ; 
+00004431: 7F 41 41 7F ; font_79 defb 0x7f, 0x41, 0x41, 0x7f, 0x00, 0x00, 0x00
+00004435: 00 00 00    ; 
+00004438: 7F 09 09 0F ; font_80 defb 0x7f, 0x09, 0x09, 0x0f, 0x00, 0x00, 0x00
+0000443C: 00 00 00    ; 
+0000443F: 7F 41 C1 7F ; font_81 defb 0x7f, 0x41, 0xc1, 0x7f, 0x00, 0x00, 0x00
+00004443: 00 00 00    ; 
+00004446: 7F 09 09 77 ; font_82 defb 0x7f, 0x09, 0x09, 0x77, 0x00, 0x00, 0x00
+0000444A: 00 00 00    ; 
+0000444D: 6F 49 49 7B ; font_83 defb 0x6f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+00004451: 00 00 00    ; 
+00004454: 01 01 7F 01 ; font_84 defb 0x01, 0x01, 0x7f, 0x01, 0x01, 0x00, 0x00
+00004458: 01 00 00    ; 
+0000445B: 7F 40 40 7F ; font_85 defb 0x7f, 0x40, 0x40, 0x7f, 0x00, 0x00, 0x00
+0000445F: 00 00 00    ; 
+00004462: 7F 20 10 0F ; font_86 defb 0x7f, 0x20, 0x10, 0x0f, 0x00, 0x00, 0x00
+00004466: 00 00 00    ; 
+00004469: 7F 40 40 7F ; font_87 defb 0x7f, 0x40, 0x40, 0x7f, 0x40, 0x40, 0x7f
+0000446D: 40 40 7F    ; 
+00004470: 77 08 08 77 ; font_88 defb 0x77, 0x08, 0x08, 0x77, 0x00, 0x00, 0x00
+00004474: 00 00 00    ; 
+00004477: 6F 48 48 7F ; font_89 defb 0x6f, 0x48, 0x48, 0x7f, 0x00, 0x00, 0x00
+0000447B: 00 00 00    ; 
+0000447E: 71 49 49 47 ; font_90 defb 0x71, 0x49, 0x49, 0x47, 0x00, 0x00, 0x00
+00004482: 00 00 00    ; 
+00004485: 7F 41 00 00 ; font_91 defb 0x7f, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00
+00004489: 00 00 00    ; 
+0000448C: 03 04 08 10 ; font_92 defb 0x03, 0x04, 0x08, 0x10, 0x60, 0x00, 0x00
+00004490: 60 00 00    ; 
+00004493: 41 7F 00 00 ; font_93 defb 0x41, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00
+00004497: 00 00 00    ; 
+0000449A: 04 02 01 02 ; font_94 defb 0x04, 0x02, 0x01, 0x02, 0x04, 0x00, 0x00
+0000449E: 04 00 00    ; 
+000044A1: 80 80 80 80 ; font_95 defb 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00
+000044A5: 00 00 00    ; 
+000044A8: 03 00 00 00 ; font_96 defb 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000044AC: 00 00 00    ; 
+000044AF: 74 54 54 7C ; font_97 defb 0x74, 0x54, 0x54, 0x7c, 0x00, 0x00, 0x00
+000044B3: 00 00 00    ; 
+000044B6: 7F 44 44 7C ; font_98 defb 0x7f, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+000044BA: 00 00 00    ; 
+000044BD: 7C 44 44 6C ; font_99 defb 0x7c, 0x44, 0x44, 0x6c, 0x00, 0x00, 0x00
+000044C1: 00 00 00    ; 
+000044C4: 7C 44 44 7F ; font_100 defb 0x7c, 0x44, 0x44, 0x7f, 0x00, 0x00, 0x00
+000044C8: 00 00 00    ; 
+000044CB: 7C 54 54 5C ; font_101 defb 0x7c, 0x54, 0x54, 0x5c, 0x00, 0x00, 0x00
+000044CF: 00 00 00    ; 
+000044D2: 7F 05 05 01 ; font_102 defb 0x7f, 0x05, 0x05, 0x01, 0x00, 0x00, 0x00
+000044D6: 00 00 00    ; 
+000044D9: BC A4 A4 FC ; font_103 defb 0xbc, 0xa4, 0xa4, 0xfc, 0x00, 0x00, 0x00
+000044DD: 00 00 00    ; 
+000044E0: 7F 04 04 7C ; font_104 defb 0x7f, 0x04, 0x04, 0x7c, 0x00, 0x00, 0x00
+000044E4: 00 00 00    ; 
+000044E7: 7D 00 00 00 ; font_105 defb 0x7d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000044EB: 00 00 00    ; 
+000044EE: 80 FD 00 00 ; font_106 defb 0x80, 0xfd, 0x00, 0x00, 0x00, 0x00, 0x00
+000044F2: 00 00 00    ; 
+000044F5: 7F 04 04 7A ; font_107 defb 0x7f, 0x04, 0x04, 0x7a, 0x00, 0x00, 0x00
+000044F9: 00 00 00    ; 
+000044FC: 7F 00 00 00 ; font_108 defb 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00004500: 00 00 00    ; 
+00004503: 7C 04 04 7C ; font_109 defb 0x7c, 0x04, 0x04, 0x7c, 0x04, 0x04, 0x7c
+00004507: 04 04 7C    ; 
+0000450A: 7C 04 04 7C ; font_110 defb 0x7c, 0x04, 0x04, 0x7c, 0x00, 0x00, 0x00
+0000450E: 00 00 00    ; 
+00004511: 7C 44 44 7C ; font_111 defb 0x7c, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+00004515: 00 00 00    ; 
+00004518: FC 44 44 7C ; font_112 defb 0xfc, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+0000451C: 00 00 00    ; 
+0000451F: 7C 44 44 FC ; font_113 defb 0x7c, 0x44, 0x44, 0xfc, 0x00, 0x00, 0x00
+00004523: 00 00 00    ; 
+00004526: 7C 04 04 0C ; font_114 defb 0x7c, 0x04, 0x04, 0x0c, 0x00, 0x00, 0x00
+0000452A: 00 00 00    ; 
+0000452D: 5C 54 54 74 ; font_115 defb 0x5c, 0x54, 0x54, 0x74, 0x00, 0x00, 0x00
+00004531: 00 00 00    ; 
+00004534: 7F 44 44 60 ; font_116 defb 0x7f, 0x44, 0x44, 0x60, 0x00, 0x00, 0x00
+00004538: 00 00 00    ; 
+0000453B: 7C 40 40 7C ; font_117 defb 0x7c, 0x40, 0x40, 0x7c, 0x00, 0x00, 0x00
+0000453F: 00 00 00    ; 
+00004542: 7C 20 10 0C ; font_118 defb 0x7c, 0x20, 0x10, 0x0c, 0x00, 0x00, 0x00
+00004546: 00 00 00    ; 
+00004549: 7C 40 40 7C ; font_119 defb 0x7c, 0x40, 0x40, 0x7c, 0x40, 0x40, 0x7c
+0000454D: 40 40 7C    ; 
+00004550: 6C 10 10 6C ; font_120 defb 0x6c, 0x10, 0x10, 0x6c, 0x00, 0x00, 0x00
+00004554: 00 00 00    ; 
+00004557: BC A0 A0 FC ; font_121 defb 0xbc, 0xa0, 0xa0, 0xfc, 0x00, 0x00, 0x00
+0000455B: 00 00 00    ; 
+0000455E: 64 54 54 4C ; font_122 defb 0x64, 0x54, 0x54, 0x4c, 0x00, 0x00, 0x00
+00004562: 00 00 00    ; 
+00004565: 08 3E 41 00 ; font_123 defb 0x08, 0x3e, 0x41, 0x00, 0x00, 0x00, 0x00
+00004569: 00 00 00    ; 
+0000456C: FF 00 00 00 ; font_124 defb 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00004570: 00 00 00    ; 
+00004573: 41 3E 08 00 ; font_125 defb 0x41, 0x3e, 0x08, 0x00, 0x00, 0x00, 0x00
+00004577: 00 00 00    ; 
+0000457A: 1C 04 1C 10 ; font_126 defb 0x1c, 0x04, 0x1c, 0x10, 0x1c, 0x00, 0x00
+0000457E: 1C 00 00    ; 
+00004581:             ; 
+00004581:             ; INCLUDE generalDefinitions.s
+00004584:             ; ALIGN
+00004584: 01          ; bmask0      DEFB &01
+00004585: 02          ; bmask1      DEFB &02
+00004586: 04          ; bmask2      DEFB &04
+00004587: 08          ; bmask3      DEFB &08
+00004588: 10          ; bmask4      DEFB &10
+00004589: 20          ; bmask5      DEFB &20
+0000458A: 40          ; bmask6      DEFB &40
+0000458B: 80          ; bmask7      DEFB &80
+0000458C:             ; 
+0000458C: AC000000    ; addr_LCD        DEFW 0xAC00_0000
+00004590: AC0383FF    ; addr_LCD_end    DEFW 0xAC03_83FF
+00004594: 000003C0    ; LCD_width       DEFW 960
+00004598: 00000018    ; charwidth       DEFW 24
+0000459C: 00001E00    ; LCD_linediff    DEFW 7680
+000045A0: 00000000    ; WHITE           DEFW     &00
+000045A4: 000000FF    ; BLACK           DEFW     &FF
+000045A8: 00000007    ; FONT_WIDTH      DEFW     7
+000045AC: 00000008    ; FONT_HEIGHT     DEFW     8
+000045B0: 00          ; nullstring      DEFB &00
+000045B1: 08 00       ; backspace       DEFB &08,0
+000045B3: 09 00       ; HT              DEFB &09,0
+000045B5: 0A 00       ; LF              DEFB &0A,0
+000045B7: 0B 00       ; VT              DEFB &0B,0
+000045B9: 0C 00       ; FF              DEFB &0C,0
+000045BB: 0D 00       ; CR              DEFB &0D,0
+000045BD: 20 00       ; BLANK           DEFB &20,0
+000045C0:             ; ALIGN
+000045C0:             ; svc_0           EQU &100 ;halt
+000045C0:             ; svc_1           EQU &101 ;printstr
+000045C0:             ; svc_2           EQU &102 ;get timer
+000045C0:             ; svc_3           EQU &103
+000045C0:             ; 
+000045C0:             ; ALIGN
+000045C0:             ; 
+000045C0:             ; usercode
+000045C0:             ; 
+000045C0:             ; ; This is an attempt to follow the following FSM I designed
+000045C0:             ; ;
+000045C0:             ; ; STATE 1:
+000045C0:             ; ;  0,9,*:  STATE1         (0,9 will push a char onto the first table, star will clear the row)
+000045C0:             ; ;  +-/x:   STATE2          (this transition will allow writing of second operand)
+000045C0:             ; ;
+000045C0:             ; ;
+000045C0:             ; ; STATE 2:
+000045C0:             ; ;  0,9:  STATE2          (Will write to the second row)
+000045C0:             ; ;  +-/x:   STATE2          (Will overwrite operator)
+000045C0:             ; ;  *: STATE1             (will reset program to intial state) (if second row is empty it will r
+                      ; eset the program)
+000045C0:             ; ;  #: STATE2            (will perform operation and copy it to opA)
+000045C0:             ; 
+000045C0:             ; 
+000045C0:             ; 
+000045C0:             ; ;reset conditions
+000045C0: E3A00000    ; MOV R0, #0
+000045C4: E5CF01C5    ; STRB R0, curline
+000045C8: E5CF01C0    ; STRB R0, curstate
+000045CC: E5CF01BE    ; STRB R0, operator
+000045D0: E5CF01D4    ; STRB R0, table1sign
+000045D4: E5CF01D1    ; STRB R0, table2sign
+000045D8: E24F0027    ; ADRL R0, FF
+000045DC: EB00022C    ; BL printstr
+000045E0:             ; 
+000045E0:             ; 
+000045E0:             ; ;setup
+000045E0: E3A00000    ; MOV R0, #0
+000045E4: EB000105    ; BL clearTable
+000045E8: E3A00001    ; MOV R0, #1
+000045EC: EB000103    ; BL clearTable
+000045F0: E24F2E3B    ; ADRL R2, keypresses
+000045F4: E2422901    ; 
+000045F8:             ; 
+000045F8:             ; 
+000045F8:             ; ;main
+000045F8:             ; scanKeyStart
+000045F8:             ; ; called once every loop through the keypad
+000045F8:             ; ; need to check addr_ABCDButtons also
+000045F8: E3A03001    ; MOV R3, #1  ; R3: Itterator
+000045FC: E3A05000    ; MOV R5, #0
+00004600: EF000103    ; SVC svc_3     ;get buttons into R0
+00004604:             ; ABCDloop             ;for(int i=1; i < 16; i**2)
+00004604: E0006003    ; AND R6, R0, R3
+00004608: E1560003    ; CMP R6, R3
+0000460C: 0A000003    ; BEQ buttonFound
+00004610:             ; 
+00004610: E0853083    ; ADD R3, R5, R3, LSL #1
+00004614: E3530010    ; CMP R3, #16
+00004618: 1AFFFFF9    ; BNE ABCDloop
+0000461C: 0A000011    ; BEQ checkKeypad
+00004620:             ; 
+00004620:             ; buttonFound ; change operator
+00004620: E3560001    ; CMP R6, #1
+00004624: 03A07001    ; MOVEQ R7, #1
+00004628: E3560002    ; CMP R6, #2
+0000462C: 03A07002    ; MOVEQ R7, #2
+00004630: E3560004    ; CMP R6, #4
+00004634: 03A07003    ; MOVEQ R7, #3
+00004638: E3560008    ; CMP R6, #8
+0000463C: 03A07004    ; MOVEQ R7, #4
+00004640: E5CF714A    ; STRB R7, operator
+00004644: E1A00007    ; MOV R0, R7
+00004648: EB000096    ; BL setOperator
+0000464C:             ; 
+0000464C: E3A00001    ; MOV  R0, #1
+00004650: E5CF0138    ; STRB R0, curstate ; move state
+00004654: E3A00001    ; MOV  R0, #1
+00004658: E5CF0131    ; STRB R0, curline
+0000465C:             ; 
+0000465C:             ; waitForABCDreset         ;check ABCD keys
+0000465C: EF000103    ; SVC svc_3
+00004660: E3500000    ; CMP R0, #0
+00004664: 1AFFFFFC    ; BNE waitForABCDreset
+00004668:             ; 
+00004668:             ; 
+00004668:             ; checkKeypad
+00004668: E3A03000    ; MOV R3, #0
+0000466C:             ; scanKeyInner
+0000466C: E7D24003    ; LDRB R4, [R2, R3] ; load value of keypresses[itterator]
+00004670: E3540004    ; CMP R4, #threshold ; if less than threshold
+00004674: BA00002E    ; BLT continueScan   ;    increment counter and keep scanning
+00004678:             ; 
+00004678:             ; 
+00004678:             ; 
+00004678:             ; 
+00004678: E1A00003    ; MOV R0, R3          ;   (Body of key press)
+0000467C: EB0000D6    ; BL convertIndexToValue  ; get value of key into R0
+00004680: E35000FE    ; CMP R0, #254            ; special char (hash)
+00004684: 0A000005    ; BEQ hash
+00004688: E35000FF    ; CMP R0, #255            ; special char (star)
+0000468C: 0A00001E    ; BEQ star
+00004690: E1A01000    ; MOV R1, R0              ; if not special, prep input and push char
+00004694: E5DF00F5    ; LDRB R0, curline
+00004698: EB0000E8    ; BL pushNewChar
+0000469C: EA000021    ; B waitForReset
+000046A0:             ; ; key press detected, wait for it to unpress before checking more keys
+000046A0:             ; hash          ;equals button
+000046A0: E5DF80E8    ; LDRB R8, curstate
+000046A4: E3580001    ; CMP R8, #STATE2
+000046A8: 1A000016    ; BNE skipStateChange
+000046AC: E5DF80DE    ; LDRB R8, operator     ;switch statement to calculate result of operator
+000046B0:             ; 
+000046B0: E3580001    ; CMP R8, #C_plus
+000046B4: 1A000004    ; BNE checkForMinus           ; for each of these four blocks
+000046B8: EB000021    ; BL getNums                  ; convert the operator to 32 bit binary
+000046BC: E3A03000    ; MOV R3, #0                  ; do the operation
+000046C0: E5CF30E5    ; STRB R3, table2sign         ; convert back
+000046C4: EB000041    ; BL runAdd
+000046C8: EA000025    ; B outputNums
+000046CC:             ; 
+000046CC:             ; checkForMinus
+000046CC: E3580002    ; CMP R8, #C_minus
+000046D0: 1A000002    ; BNE checkForMult
+000046D4: EB00001A    ; BL getNums
+000046D8: EB00004C    ; BL runSub
+000046DC: EA000020    ; B outputNums
+000046E0:             ; 
+000046E0:             ; checkForMult
+000046E0: E3580004    ; CMP R8, #C_multiply
+000046E4: 1A000002    ; BNE checkForDiv
+000046E8: EB000015    ; BL getNums
+000046EC: EB000050    ; BL runMul
+000046F0: EA00001B    ; B outputNums
+000046F4:             ; 
+000046F4:             ; checkForDiv
+000046F4: E3580003    ; CMP R8, #C_divide
+000046F8: 1A000002    ; BNE endOfOperatorChecks
+000046FC: EB000010    ; BL getNums
+00004700: EB000054    ; BL runDiv
+00004704: EA000016    ; B outputNums
+00004708:             ; 
+00004708:             ; 
+00004708:             ; endOfOperatorChecks
+00004708:             ; skipStateChange
+00004708: EA000006    ; B waitForReset
+0000470C:             ; 
+0000470C:             ; star                        ;logic to clear the table
+0000470C: E5DF007D    ; LDRB R0, curline
+00004710: EB0000D1    ; BL convertTableToNum
+00004714: E3500000    ; CMP R0, #0
+00004718: 0AFFFFA8    ; BEQ usercode ;hard reset
+0000471C: E5DF006D    ; LDRB R0, curline
+00004720: EB0000B6    ; BL clearTable
+00004724: EB0000F5    ; BL printline
+00004728:             ; 
+00004728:             ; waitForReset       ; this is used to ensure only one transition is taken at once
+00004728: E7D24003    ; LDRB R4, [R2, R3]  ; keep reloading the value of keypresses[itterator]
+0000472C: E3540000    ; CMP R4, #0         ; wait until it is 0
+00004730: 1AFFFFFC    ; BNE waitForReset
+00004734:             ; 
+00004734:             ;                       ;(end of body of key press)
+00004734:             ; continueScan
+00004734: E2833001    ; ADD R3, R3, #1
+00004738: E353000C    ; CMP R3, #12
+0000473C: 0AFFFFAD    ; BEQ scanKeyStart
+00004740: EAFFFFC9    ; B scanKeyInner
+00004744:             ; 
+00004744:             ; getNums
+00004744:             ; ;only used as a method to reuse code, should not be called outside of the check functions
+00004744: E92D4000    ; PUSH {LR}
+00004748: E3A00001    ; MOV R0, #1
+0000474C: EB0000C2    ; BL convertTableToNum
+00004750: E1A01000    ; MOV R1, R0
+00004754: E3A00000    ; MOV R0, #0
+00004758: EB0000BF    ; BL convertTableToNum
+0000475C:             ; ;at this point opA in R0, opB in R1
+0000475C: E8BD4000    ; POP {LR}
+00004760: E1A0F00E    ; MOV PC, LR
+00004764:             ; 
+00004764:             ; outputNums
+00004764:             ; ;only used as a method to reuse code, should not be called outside of the check functions
+00004764: E3A01000    ; MOV R1, #0
+00004768: EB000081    ; BL convertNumToTable
+0000476C: E3A00000    ; MOV R0, #0
+00004770: EB0000E2    ; BL printline
+00004774: E3A00001    ; MOV R0, #1
+00004778: EB0000A0    ; BL clearTable
+0000477C: EB0000DF    ; BL printline
+00004780: EAFFFFE8    ; B waitForReset
+00004784:             ; 
+00004784:             ; 
+00004784:             ; 
+00004784:             ; ALIGN
+00004784:             ; keyvalues
+00004784: 03          ; DEFB 3
+00004785: 06          ; DEFB 6
+00004786: 09          ; DEFB 9
+00004787: FE          ; DEFB 254 ; hash
+00004788: 02          ; DEFB 2
+00004789: 05          ; DEFB 5
+0000478A: 08          ; DEFB 8
+0000478B: 00          ; DEFB 0
+0000478C: 01          ; DEFB 1
+0000478D: 04          ; DEFB 4
+0000478E: 07          ; DEFB 7
+0000478F: FF          ; DEFB 255 ; star
+00004790:             ; 
+00004790:             ; STATE1 EQU 0
+00004790:             ; STATE2 EQU 1
+00004790:             ; 
+00004790: 00          ; curstate DEFB 0
+00004791: 00          ; curline  DEFB 0
+00004792: 00          ; operator DEFB 0
+00004793: 0D 00       ; return DEFB &0D, 0 ;CR CHAR
+00004795: 09 00       ; blank DEFB &09, 0 ;HT CHAR
+00004797: 20 00       ; hardblank DEFB 32,0
+00004799: 00          ; printbit DEFB 0
+0000479A: 00          ; printbitend DEFB 0 ; printstr used so i can use cursor control also
+0000479B:             ; ; table to contain numbers of first row
+0000479B:             ; ; max num is 8 digits
+0000479B:             ; threshold  EQU 4
+0000479B:             ; table_nums EQU 1
+0000479B:             ; table_size EQU 8
+0000479B:             ; table_bases ;most significant digit first
+0000479C:             ; ALIGN
+0000479C:             ; DEFS 8
+000047A4:             ; table_num2
+000047A4:             ; DEFS 8
+000047AC: 00          ; table1sign DEFB 0 ;positive by default
+000047AD: 00          ; table2sign DEFB 0 ;positive by default
+000047B0:             ; ALIGN
+000047B0:             ; INCLUDE calculator_arith.s
+000047B0:             ; 
+000047B0:             ; loadSigns
+000047B0: E55F200C    ; LDRB R2, table1sign
+000047B4: E55F300F    ; LDRB R3, table2sign
+000047B8: E1A0F00E    ; MOV PC, LR
+000047BC:             ; 
+000047BC:             ; 
+000047BC:             ; 
+000047BC:             ; ;all runXXX functions here take opA in R0 opB in R1
+000047BC:             ; ; RULES FOR SIGN AND MAGNITUDE ARITHMETIC
+000047BC:             ; ; for C = A op B
+000047BC:             ; ;
+000047BC:             ; ; Addition
+000047BC:             ; ; if(signA == signB):
+000047BC:             ; ;   signC = signA
+000047BC:             ; ; else:
+000047BC:             ; ;   c = largest(A,B) - smallest(A,B)
+000047BC:             ; ;   signC = sign(largest(A,B))
+000047BC:             ; ;
+000047BC:             ; ; Subtraction
+000047BC:             ; ; signB = -signB
+000047BC:             ; ; then compute C = A + B
+000047BC:             ; ;
+000047BC:             ; ; Multiplication
+000047BC:             ; ; if signA == signB:
+000047BC:             ; ;   signC = +
+000047BC:             ; ; else
+000047BC:             ; ;   signC = -
+000047BC:             ; ; C = A x B
+000047BC:             ; ;
+000047BC:             ; ; Division
+000047BC:             ; ; same sign rules as multiplication
+000047BC:             ; ; C = A / B
+000047BC:             ; ;
+000047BC:             ; ;
+000047BC:             ; ;
+000047BC:             ; ;
+000047BC:             ; 
+000047BC:             ; 
+000047BC:             ; multDivLogic
+000047BC: E1520003    ; CMP R2, R3
+000047C0: 03A04000    ; MOVEQ R4, #0
+000047C4: 13A04001    ; MOVNE R4, #1
+000047C8: E54F4024    ; STRB R4, table1sign
+000047CC: E1A0F00E    ; MOV PC, LR
+000047D0:             ; 
+000047D0:             ; 
+000047D0:             ; runAdd ;returns result to R0
+000047D0: E92D4000    ; PUSH {LR}
+000047D4: E92D1FFC    ; PUSH {R2 - R12}
+000047D8: EBFFFFF4    ; BL loadSigns
+000047DC: E1520003    ; CMP R2, R3
+000047E0: 1A000001    ; BNE resolveAdditionSign
+000047E4:             ; ;sign for table will remain the same
+000047E4: E0800001    ; ADD R0, R0, R1
+000047E8: EA000005    ; B endRunAdd
+000047EC:             ; 
+000047EC:             ; resolveAdditionSign
+000047EC: E1500001    ; CMP R0, R1
+000047F0: A0400001    ; SUBGE R0, R0, R1 ;opA is largest
+000047F4: B0410000    ; SUBLT R0, R1, R0 ;opB is largest
+000047F8:             ; ;set signA to sign(largest(A,B))
+000047F8: A1A04002    ; MOVGE R4, R2
+000047FC: B1A04003    ; MOVLT R4, R3
+00004800: E54F405C    ; STRB R4, table1sign ;move correct sign to R4, then write to table1
+00004804:             ; 
+00004804:             ; endRunAdd
+00004804: E8BD1FFC    ; POP  {R2 - R12}
+00004808: E8BD4000    ; POP  {LR}
+0000480C: E1A0F00E    ; MOV  PC, LR
+00004810:             ; 
+00004810:             ; 
+00004810:             ; runSub ;returns result to R0
+00004810: E92D4000    ; PUSH {LR}
+00004814: E92D1FFC    ; PUSH {R2 - R12}
+00004818: EBFFFFE4    ; BL loadSigns
+0000481C: E3A03001    ; MOV R3, #1 ;I forgot when designing the sign logic, the sign of opB cannot be negative unless s
+                      ; ub is used
+00004820:             ;            ; thankfully this somewhat simplifes the logic, as I dont need to flip the sign, jus
+                      ; t set it6
+00004820: E54F307B    ; STRB R3, table2sign
+00004824: EBFFFFE9    ; BL runAdd
+00004828: E8BD1FFC    ; POP  {R2 - R12}
+0000482C: E8BD4000    ; POP  {LR}
+00004830: E1A0F00E    ; MOV  PC, LR
+00004834:             ; 
+00004834:             ; runMul ;returns result to R0
+00004834: E92D4000    ; PUSH {LR}
+00004838: E92D1FFC    ; PUSH {R2 - R12}
+0000483C: EBFFFFDB    ; BL loadSigns
+00004840: E3A03000    ; MOV R3, #0
+00004844: EBFFFFDC    ; BL multDivLogic
+00004848: E0000190    ; MUL R0, R0, R1
+0000484C: E8BD1FFC    ; POP  {R2 - R12}
+00004850: E8BD4000    ; POP  {LR}
+00004854: E1A0F00E    ; MOV  PC, LR
+00004858:             ; 
+00004858:             ; runDiv ;returns result to R0
+00004858: E92D4000    ; PUSH {LR}
+0000485C: E92D1FFC    ; PUSH {R2-R12}
+00004860: EBFFFFD2    ; BL loadSigns
+00004864: E3A03000    ; MOV R3, #0
+00004868: EBFFFFD3    ; BL multDivLogic
+0000486C: EB000002    ; BL unsignedIntegerDivision
+00004870: E8BD1FFC    ; POP  {R2 - R12}
+00004874: E8BD4000    ; POP  {LR}
+00004878: E1A0F00E    ; MOV  PC, LR
+0000487C:             ; 
+0000487C:             ; unsignedIntegerDivision
+0000487C:             ; ;cannot corrupt R0-4
+0000487C: E3510000    ; CMP R1, #0 ;check for divison by zero
+00004880: 03A00000    ; MOVEQ R0, #0
+00004884: 0A000006    ; BEQ skipDivision
+00004888: E3A05000    ; MOV R5, #0 ;counter
+0000488C: E1A06000    ; MOV R6, R0
+00004890:             ; divLoop
+00004890: E0466001    ; SUB R6, R6, R1
+00004894: E2855001    ; ADD R5, R5, #1
+00004898: E3560000    ; CMP R6, #0
+0000489C: AAFFFFFB    ; BGE divLoop
+000048A0: E2450001    ; SUB R0, R5, #1
+000048A4:             ; skipDivision
+000048A4: E1A0F00E    ; MOV PC, LR
+000048A8:             ; 
+000048A8:             ; INCLUDE calculator_supporting.s
+000048A8:             ; ; This file provides useful methods for use in calculator.s
+000048A8:             ; ; Methods provided here:
+000048A8:             ; ;  -setOperator
+000048A8:             ; ;  -copyTable
+000048A8:             ; ;  -convertNumToTable
+000048A8:             ; ;  -convertTableToNum
+000048A8:             ; ;  -convertIndexToValue
+000048A8:             ; ;  -clearTable
+000048A8:             ; ;  -pushNewChar
+000048A8:             ; ;  -shiftchars
+000048A8:             ; ;  -printline
+000048A8:             ; 
+000048A8:             ; 
+000048A8:             ; 
+000048A8:             ; setOperator ;takes operator num at R0
+000048A8: E92D4000    ; PUSH {LR}   ;this function will print the operator one line1
+000048AC: E92D0002    ; PUSH {R1}
+000048B0: E54F0126    ; STRB R0, operator
+000048B4: E1A01000    ; MOV R1, R0
+000048B8: E24F000B    ; ADRL R0, LF
+000048BC: E2400C03    ; 
+000048C0: EB000173    ; BL printstr
+000048C4: E3510001    ; CMP R1, #1
+000048C8: 028F0040    ; ADREQ R0, c_plus
+000048CC: E3510002    ; CMP R1, #2
+000048D0: 028F003A    ; ADREQ R0, c_minus
+000048D4: E3510003    ; CMP R1, #3
+000048D8: 028F0034    ; ADREQ R0, c_divide
+000048DC: E3510004    ; CMP R1, #4
+000048E0: 028F002E    ; ADREQ R0, c_multiply
+000048E4: EB00016A    ; BL printstr
+000048E8:             ; 
+000048E8: E24F0039    ; ADRL R0, VT
+000048EC: E2400C03    ; 
+000048F0: EB000167    ; BL printstr
+000048F4: E24F004B    ; ADRL R0, backspace
+000048F8: E2400C03    ; 
+000048FC: EB000164    ; BL printstr
+00004900: E1A00001    ; MOV R0, R1
+00004904: E8BD0002    ; POP {R1}
+00004908: E8BD4000    ; POP {LR}
+0000490C: E1A0F00E    ; MOV PC, LR
+00004910:             ; ALIGN
+00004910: 2B 00       ; c_plus DEFB "+",0
+00004912: 2D 00       ; c_minus DEFB "-",0
+00004914: 2F 00       ; c_divide DEFB "/",0
+00004916: 2A 00       ; c_multiply DEFB "*",0
+00004918:             ; C_plus EQU 1
+00004918:             ; C_minus EQU 2
+00004918:             ; C_divide EQU 3
+00004918:             ; C_multiply EQU 4
+00004918:             ; ALIGN
+00004918:             ; copyTable
+00004918:             ; ; R0 defines SRC table
+00004918:             ; ; R1 defines DST table
+00004918:             ; ; the difference in bytes between the tables are (DST - SRC) * table_size
+00004918: E92D4000    ; PUSH {LR}
+0000491C: E92D1FFC    ; PUSH {R2 - R12}
+00004920: E3500001    ; CMP R0, #table_nums
+00004924: ABFFEE3F    ; BLGE halt
+00004928: E3510001    ; CMP R1, #table_nums
+0000492C: ABFFEE3D    ; BLGE halt
+00004930:             ; 
+00004930: E3A02000    ; MOV R2, #0 ;stores the difference
+00004934: E0412000    ; SUB R2, R1, R0 ; (DST - SRC)
+00004938: E3A03000    ; MOV R3, #0 ; used in fast multiplier and also as an itterator
+0000493C: E0832182    ; ADD R2, R3, R2, LSL #3 ;Fast multipiler of 8 (needs changing if table size changes)
+00004940: E24F40AD    ; ADRL R4, table_bases
+00004944: E2444C01    ; 
+00004948: E0844000    ; ADD  R4, R4, R0
+0000494C:             ; copyLoop
+0000494C: E7D45003    ; LDRB R5, [R4, R3]
+00004950: E0844002    ; ADD  R4, R4, R2   ;increase R4 by differnce in bytes between tables
+00004954: E7C45003    ; STRB R5, [R4, R3]
+00004958: E0444002    ; SUB  R4, R4, R2   ;undo difference
+0000495C: E2833001    ; ADD R3, R3, #1
+00004960: E3530008    ; CMP R3, #table_size
+00004964: 1AFFFFF8    ; BNE copyLoop
+00004968:             ; 
+00004968: E8BD1FFC    ; POP {R2 - R12}
+0000496C: E8BD4000    ; POP {LR}
+00004970: E1A0F00E    ; MOV PC, LR
+00004974:             ; 
+00004974:             ; 
+00004974:             ; convertNumToTable
+00004974:             ; ;takes num to convert at R0
+00004974:             ; ;takes table to set at R1
+00004974: E92D4000    ; PUSH {LR}
+00004978: E92D1FFC    ; PUSH {R2 - R12}
+0000497C: E92D0001    ; PUSH {R0} ;to avoid corrupting user state
+00004980: E3510001    ; CMP R1, #table_nums
+00004984: CBFFEE27    ; BLGT halt
+00004988: EB0000B7    ; BL bcd_convert
+0000498C: E3A02000    ; MOV R2, #0 ;itterator
+00004990: E3A05000    ; MOV R5, #0 ;constant
+00004994: E3A0600F    ; MOV R6, #&0000_000F ; mask
+00004998: E24F3005    ; ADRL R3, table_bases
+0000499C: E2433C02    ; 
+000049A0: E0833181    ; ADD  R3, R3, R1, LSL #3
+000049A4: E2833008    ; ADD  R3, R3, #8 ;start at table end
+000049A8:             ; writeLoop
+000049A8: E0857102    ; ADD R7, R5, R2, LSL #2 ;multiply itterator by 4
+000049AC: E0854750    ; ADD R4, R5, R0, ASR R7
+000049B0: E0048006    ; AND R8, R4, R6          ; mask BCD number out
+000049B4: E0439002    ; SUB R9, R3, R2          ;find correct table place to write to
+000049B8: E2499001    ; SUB R9, R9, #1
+000049BC: E5498000    ; STRB R8, [R9]           ;perform write
+000049C0:             ; 
+000049C0:             ; 
+000049C0: E2822001    ; ADD R2, R2, #1 ;loop closure conditions
+000049C4: E3520008    ; CMP R2, #8
+000049C8: 1AFFFFF6    ; BNE writeLoop
+000049CC:             ; 
+000049CC:             ; 
+000049CC: E8BD0001    ; POP {R0}
+000049D0: E8BD1FFC    ; POP {R2 - R12}
+000049D4: E8BD4000    ; POP {LR}
+000049D8: E1A0F00E    ; MOV PC, LR
+000049DC:             ; 
+000049DC:             ; convertIndexToValue
+000049DC:             ; ;takes index at R0
+000049DC:             ; ;returns to R0
+000049DC:             ; ; used to determine the value of a key press
+000049DC: E92D4000    ; PUSH {LR}
+000049E0: E92D0006    ; PUSH {R1 - R2}
+000049E4: E350000C    ; CMP R0, #12
+000049E8: ABFFEE0E    ; BLGE halt
+000049EC: E24F1E27    ; ADRL R1, keyvalues
+000049F0: E7D10000    ; LDRB R0, [R1, R0]
+000049F4: E8BD0006    ; POP  {R1 - R2}
+000049F8: E8BD4000    ; POP  {LR}
+000049FC: E1A0F00E    ; MOV  PC, LR
+00004A00:             ; 
+00004A00:             ; clearTable ; R0 defines which table to target
+00004A00: E92D4000    ; PUSH {LR}
+00004A04: E92D1FFE    ; PUSH {R1 - R12}
+00004A08: E3500001    ; CMP     R0, #table_nums ;check table is valid
+00004A0C: CBFFEE05    ; BLGT     halt
+00004A10: E3A01000    ; MOV  R1, #0
+00004A14: E24F2081    ; ADRL R2, table_bases
+00004A18: E2422C02    ; 
+00004A1C: E0822180    ; ADD  R2, R2, R0, LSL #3 ;jump to correct table by adding R0*table_size
+00004A20: E3A03000    ; MOV  R3, #0
+00004A24:             ; clearLoop
+00004A24: E4C21001    ; STRB R1, [R2],#1        ;zero out table
+00004A28: E2833001    ; ADD R3, R3, #1
+00004A2C: E3530008    ; CMP R3, #table_size
+00004A30: 1AFFFFFB    ; BNE clearLoop
+00004A34: E8BD1FFE    ; POP  {R1 - R12}
+00004A38: E8BD4000    ; POP  {LR}
+00004A3C: E1A0F00E    ; MOV  PC, LR
+00004A40:             ; 
+00004A40:             ; pushNewChar
+00004A40:             ; ; R0 defines which table to target
+00004A40:             ; ; R1 defines the number to add
+00004A40: E92D4000    ; PUSH {LR}
+00004A44: E92D1FFE    ; PUSH {R1 - R12}
+00004A48: EB00001A    ; BL shiftchars
+00004A4C: EB00002B    ; BL printline
+00004A50: E8BD1FFE    ; POP  {R1 - R12}
+00004A54: E8BD4000    ; POP  {LR}
+00004A58: E1A0F00E    ; MOV  PC, LR
+00004A5C:             ; 
+00004A5C:             ; convertTableToNum
+00004A5C:             ; 
+00004A5C:             ; ; R0 defines which table to target
+00004A5C:             ; ; will corrupt R0 for output
+00004A5C: E92D4000    ; PUSH    {LR}
+00004A60: E92D1FFE    ; PUSH    {R1 - R12}
+00004A64: E3500001    ; CMP     R0, #table_nums
+00004A68: CBFFEDEE    ; BLGT     halt
+00004A6C: E3A01000    ; MOV     R1, #0 ; accumilator
+00004A70: E3A0200A    ; MOV     R2, #10 ; constant
+00004A74: E24F30E1    ; ADRL    R3, table_bases
+00004A78: E2433C02    ; 
+00004A7C: E0833180    ; ADD     R3, R3, R0, LSL #3 ;jump to correct table by adding R0*table_size
+00004A80: E2833008    ; ADD     R3, R3, #table_size ;target end of table first
+00004A84: E3A04000    ; MOV     R4, #0 ; itterator
+00004A88: E3A05001    ; MOV     R5, #1 ; multipiler
+00004A8C:             ; addLoop
+00004A8C: E5736001    ; LDRB    R6, [R3,#-1]!
+00004A90: E0070596    ; MUL     R7, R6, R5
+00004A94: E0811007    ; ADD     R1, R1, R7
+00004A98: E0050295    ; MUL     R5, R5, R2  ; increase multipiler
+00004A9C:             ; 
+00004A9C:             ; ;loop restrictions
+00004A9C: E2844001    ; ADD     R4, R4, #1
+00004AA0: E3540008    ; CMP     R4, #table_size
+00004AA4: 1AFFFFF8    ; BNE addLoop
+00004AA8: E1A00001    ; MOV     R0, R1
+00004AAC: E8BD1FFE    ; POP     {R1 - R12}
+00004AB0: E8BD4000    ; POP     {LR}
+00004AB4: E1A0F00E    ; MOV     PC, LR
+00004AB8:             ; 
+00004AB8:             ; shiftchars
+00004AB8:             ; ;R0 defines which table to target
+00004AB8:             ; ;R1 defines the value to be copied into the LSD
+00004AB8:             ; ;MSD lost
+00004AB8: E92D4000    ; PUSH {LR}
+00004ABC: E92D1FFC    ; PUSH {R2 - R12}
+00004AC0: E3500001    ; CMP     R0, #table_nums
+00004AC4: CBFFEDD7    ; BLGT     halt
+00004AC8: E24F2035    ; ADRL   R2, table_bases
+00004ACC: E2422C03    ; 
+00004AD0: E0822180    ; ADD    R2, R2, R0, LSL #3 ;jump to correct table by adding R0*table_size
+00004AD4: E3A03000    ; MOV    R3, #0 ;itterator
+00004AD8: E2822001    ; ADD    R2, R2, #1
+00004ADC:             ; startShiftLoop
+00004ADC: E4524001    ; LDRB   R4, [R2], #-1   ; These two commands shift the numbers in the table to the left on the s
+                      ; creen
+00004AE0: E4C24002    ; STRB   R4, [R2], #2
+00004AE4: E2833001    ; ADD    R3, R3, #1
+00004AE8: E3530007    ; CMP    R3, #7
+00004AEC: 1AFFFFFA    ; BNE startShiftLoop
+00004AF0: E5421001    ; STRB   R1, [R2, #-1] ;write new value
+00004AF4: E8BD1FFC    ; POP {R2 - R12}
+00004AF8: E8BD4000    ; POP {LR}
+00004AFC: E1A0F00E    ; MOV PC, LR
+00004B00:             ; 
+00004B00:             ; printline ;takes table num as R0
+00004B00: E92D4000    ; PUSH {LR}
+00004B04: E92D1FFE    ; PUSH {R1 - R12}
+00004B08:             ; 
+00004B08: E3A02000    ; MOV R2, #0
+00004B0C:             ; moveCursor        ;this will print as many linefeeds as neccessary
+00004B0C: E3500000    ; CMP R0, #0        ;  to target the correct table
+00004B10: E92D0001    ; PUSH {R0}
+00004B14: 0A00000F    ; BEQ skipSign
+00004B18: E55F1374    ; LDRB R1, table1sign
+00004B1C: E3510000    ; CMP R1, #0
+00004B20: 0A000006    ; BEQ blankSign
+00004B24: E24F001A    ; ADRL R0, c_minus
+00004B28: E2400C02    ; 
+00004B2C: EB0000D8    ; BL printstr
+00004B30: E24F0087    ; ADRL R0, backspace
+00004B34: E2400C05    ; 
+00004B38: EB0000D5    ; BL printstr
+00004B3C: EA000005    ; B skipSign
+00004B40:             ; blankSign
+00004B40: E24F00B1    ; ADRL R0, hardblank
+00004B44: E2400C03    ; 
+00004B48: EB0000D1    ; BL printstr
+00004B4C: E24F00A3    ; ADRL R0, backspace
+00004B50: E2400C05    ; 
+00004B54: EB0000CE    ; BL printstr
+00004B58:             ; skipSign
+00004B58: E8BD0001    ; POP {R0}
+00004B5C: E92D0001    ; PUSH {R0}
+00004B60: E1520000    ; CMP R2, R0
+00004B64: E24F00B7    ; ADRL R0, LF
+00004B68: E2400C05    ; 
+00004B6C: 1B0000C8    ; BLNE printstr
+00004B70: 12822001    ; ADDNE R2, R2, #1
+00004B74: 1AFFFFE4    ; BNE moveCursor
+00004B78:             ; 
+00004B78:             ; 
+00004B78: E24F00EB    ; ADRL R0, blank
+00004B7C: E2400C03    ; 
+00004B80: EB0000C3    ; BL printstr
+00004B84: E8BD0001    ; POP {R0}
+00004B88: E3500001    ; CMP     R0, #table_nums
+00004B8C: CBFFEDA5    ; BLGT     halt
+00004B90: E24F10FD    ; ADRL    R1, table_bases ;holds address of first number row
+00004B94: E2411C03    ; 
+00004B98: E0811180    ; ADD     R1, R1, R0, LSL #3 ; Address += R0*8
+00004B9C: E3E02000    ; MOV     R2, #-1 ; itterator
+00004BA0: E3A05000    ; MOV     R5, #0
+00004BA4:             ; startprintingnum
+00004BA4: E2822001    ; ADD     R2, R2, #1
+00004BA8: E3520008    ; CMP     R2, #table_size  ; max num of digits
+00004BAC: 0A00001F    ; BEQ end
+00004BB0: E4D13001    ; LDRB    R3, [R1], #1
+00004BB4: E3530000    ; CMP     R3, #0 ; if number is not between 0-9 assume blankspace
+00004BB8: BA00000B    ; BLT blankSpace
+00004BBC: 0A000010    ; BEQ zeroCheck
+00004BC0: E3530009    ; CMP     R3, #9
+00004BC4: CA000008    ; BGT blankSpace
+00004BC8: E3A05001    ; MOV     R5, #1
+00004BCC: E2834030    ; ADD     R4, R3, #48 ; offset by 48 to convert to ascii
+00004BD0: E54F443F    ; STRB    R4, printbit ; write to an address so i cant printstr it
+00004BD4: E92D0001    ; PUSH    {R0}
+00004BD8: E24F0047    ; ADRL    R0, printbit
+00004BDC: E2400B01    ; 
+00004BE0: EB0000AB    ; BL printstr
+00004BE4: E8BD0001    ; POP     {R0}
+00004BE8: EAFFFFED    ; B startprintingnum
+00004BEC:             ; 
+00004BEC:             ; blankSpace
+00004BEC: E92D0001    ; PUSH {R0}
+00004BF0: E24F0063    ; ADRL R0, blank
+00004BF4: E2400B01    ; 
+00004BF8: EB0000A5    ; BL printstr
+00004BFC: E8BD0001    ; POP  {R0}
+00004C00: EAFFFFE7    ; B startprintingnum
+00004C04:             ; 
+00004C04:             ; zeroCheck
+00004C04: E3550000    ; CMP     R5, #0
+00004C08: E2834030    ; ADD     R4, R3, #48
+00004C0C: E54F447B    ; STRB    R4, printbit
+00004C10: E92D0001    ; PUSH    {R0}
+00004C14: E24F0083    ; ADRL    R0, printbit ;by default try to write 0
+00004C18: E2400B01    ; 
+00004C1C: 024F008D    ; ADRLEQ  R0, hardblank    ;overwrite if need be
+00004C20: 02400B01    ; 
+00004C24: EB00009A    ; BL printstr
+00004C28: E8BD0001    ; POP {R0}
+00004C2C: EAFFFFDC    ; B startprintingnum
+00004C30:             ; 
+00004C30:             ; end
+00004C30: E1A02000    ; MOV R2, R0
+00004C34: E24F00A9    ; ADRL R0, return ;move to start
+00004C38: E2400B01    ; 
+00004C3C: EB000094    ; BL printstr
+00004C40:             ; 
+00004C40:             ; ;need to move cursor up R0 places
+00004C40:             ; 
+00004C40: E3A03000    ; MOV R3, #0
+00004C44: E24F0095    ; ADRL R0, VT
+00004C48: E2400C06    ; 
+00004C4C:             ; VTloop
+00004C4C: E1530000    ; CMP R3, R0
+00004C50: 1B00008F    ; BLNE printstr
+00004C54: 12833001    ; ADDNE R3, R3, #1
+00004C58: 1AFFFFFB    ; BNE VTloop
+00004C5C:             ; 
+00004C5C:             ; 
+00004C5C: E1A00002    ; MOV R0, R2
+00004C60: E8BD1FFE    ; POP {R1 - R12}
+00004C64: E8BD4000    ; POP {LR}
+00004C68: E1A0F00E    ; MOV PC, LR
+00004C6C:             ; 
+00004C6C:             ; INCLUDE ../general/bcdconvert.s
+00004C6C:             ; ;Edited by Sam da Costa to avoid corruption of R1 - R6
+00004C6C:             ; ;Edits are made in caps
+00004C6C:             ; ;-------------------------------------------------------------------------------
+00004C6C:             ; 
+00004C6C:             ; ; Convert unsigned binary value in R0 into BCD representation, returned in R0
+00004C6C:             ; ; Any overflowing digits are generated, but not retained or returned in this
+00004C6C:             ; ;  version.
+00004C6C:             ; ; Corrupts registers R1-R6, inclusive; also R14
+00004C6C:             ; ; Does not require a stack
+00004C6C:             ; 
+00004C6C:             ; bcd_convert
+00004C6C: E92D007E    ;     PUSH {R1-R6}
+00004C70: E1A0600E    ;     mov r6, lr                  ; Keep return address
+00004C74:             ;                                                 ;  in case there is no stack
+00004C74: E28F402C    ;                 adr     r4, dec_table           ; Point at conversion table
+00004C78: E3A05000    ;                 mov     r5, #0                  ; Zero accumulator
+00004C7C:             ; 
+00004C7C: E4941004    ; bcd_loop        ldr     r1, [r4], #4            ; Get next divisor, step pointer
+00004C80: E3510001    ;                 cmp     r1, #1                  ; Termination condition?
+00004C84: 0A000003    ;                 beq     bcd_out                 ;  yes
+00004C88:             ; 
+00004C88: EB000010    ;                 bl      divide                  ; R0 := R0/R1 (rem. R2)
+00004C8C:             ; 
+00004C8C: E0805205    ;                 add     r5, r0, r5, lsl #4      ; Accumulate result
+00004C90: E1A00002    ;                 mov     r0, r2                  ; Recycle remainder
+00004C94: EAFFFFF8    ;                 b       bcd_loop                ;
+00004C98:             ; 
+00004C98: E0800205    ; bcd_out         add     r0, r0, r5, lsl #4      ; Accumulate result to output
+00004C9C: E1A0E006    ;     MOV LR, R6
+00004CA0: E8BD007E    ;     POP {R1-R6}
+00004CA4: E1A0F00E    ;                 mov     pc, LR                  ; Return
+00004CA8:             ;     ; was mov pc, r6
+00004CA8: 3B9ACA00    ; dec_table       DCD     1000000000, 100000000, 10000000, 1000000
+00004CAC: 05F5E100    ; 
+00004CB0: 00989680    ; 
+00004CB4: 000F4240    ; 
+00004CB8: 000186A0    ;                 DCD     100000, 10000, 1000, 100, 10, 1
+00004CBC: 00002710    ; 
+00004CC0: 000003E8    ; 
+00004CC4: 00000064    ; 
+00004CC8: 0000000A    ; 
+00004CCC: 00000001    ; 
+00004CD0:             ; 
+00004CD0:             ; ;-------------------------------------------------------------------------------
+00004CD0:             ; 
+00004CD0:             ; ; 32-bit unsigned integer division R0/R1
+00004CD0:             ; ; Returns quotient in R0 and remainder in R2
+00004CD0:             ; ; R3 is corrupted (will be zero)
+00004CD0:             ; ; Returns quotient FFFFFFFF in case of division by zero
+00004CD0:             ; ; Does not require a stack
+00004CD0:             ; 
+00004CD0: E3A02000    ; divide          mov     r2, #0                  ; AccH
+00004CD4: E3A03020    ;                 mov     r3, #32                 ; Number of bits in division
+00004CD8: E0900000    ;                 adds    r0, r0, r0              ; Shift dividend
+00004CDC:             ; 
+00004CDC: E0A22002    ; divide1         adc     r2, r2, r2              ; Shift AccH, carry into LSB
+00004CE0: E1520001    ;                 cmp     r2, r1                  ; Will it go?
+00004CE4: 20422001    ;                 subhs   r2, r2, r1              ; If so, subtract
+00004CE8: E0B00000    ;                 adcs    r0, r0, r0              ; Shift dividend & Acc. result
+00004CEC: E2433001    ;                 sub     r3, r3, #1              ; Loop count
+00004CF0: E1130003    ;                 tst     r3, r3                  ; Leaves carry alone
+00004CF4: 1AFFFFF8    ;                 bne     divide1                 ; Repeat as required
+00004CF8:             ; 
+00004CF8: E1A0F00E    ;                 mov     pc, lr                  ; Return
+00004CFC:             ; 
+00004CFC:             ; ;-------------------------------------------------------------------------------
+00004CFC:             ; 
+00004CFC:             ; INCLUDE ../general/hexprint.s
+00004CFC:             ; ALIGN
+00004CFC:             ; ; Num to print in R0
+00004CFC:             ; hexprint ; prints half a word
+00004CFC: E92D0006    ; PUSH {R1 - R2}
+00004D00: E3A02000    ; MOV R2, #0 ;used for rotating
+00004D04: E0820660    ; ADD R0, R2, R0, ROR #12
+00004D08: E92D4000    ; PUSH {LR}
+00004D0C: EB000008    ; BL hexprint_sub
+00004D10: E0820E60    ; ADD R0, R2, R0, ROR #28 ;not space efficient, but using a loop would increase processing time a
+                      ; nd waste a register
+00004D14: EB000006    ; BL hexprint_sub
+00004D18: E0820E60    ; ADD R0, R2, R0, ROR #28
+00004D1C: EB000004    ; BL hexprint_sub
+00004D20: E0820E60    ; ADD R0, R2, R0, ROR #28
+00004D24: EB000002    ; BL hexprint_sub
+00004D28: E8BD4000    ; POP {LR}
+00004D2C: E8BD0006    ; POP{R1 - R2}
+00004D30: E1A0F00E    ; MOV PC, LR
+00004D34:             ; 
+00004D34:             ; 
+00004D34:             ; hexprint_sub ; only corrupts then restores R1
+00004D34: E92D0002    ; PUSH {R1}
+00004D38: E1A01000    ; MOV R1, R0 ; save R0
+00004D3C: E200000F    ; AND R0, R0, #&0000000F ;clear unused bits
+00004D40: E3500009    ; CMP R0, #9
+00004D44: C2800037    ; ADDGT R0, R0, #55 ;offset to get character
+00004D48: D2800030    ; ADDLE R0, R0, #48 ;offset to get character
+00004D4C:             ; ;I realise now that my printc function doesnt work exactly as I thought it would
+00004D4C:             ; ;For it to work correctly it needs to be run within printstr i think
+00004D4C:             ; ;The following code is a work around so that I can use printstr instead as printstr works corre
+                      ; ctly
+00004D4C:             ; ;It stores it to a location with a null 0 in the next byte so it can be read as a null terminat
+                      ; ed string
+00004D4C:             ; ;I would fix my printc function, but I am running out of time
+00004D4C: E5CF0018    ; STRB R0, tempCharPos
+00004D50: E28F0014    ; ADRL R0, tempCharPos
+00004D54: E92D4000    ; PUSH {LR}
+00004D58: EF000101    ; SVC svc_1
+00004D5C: E8BD4000    ; POP {LR}
+00004D60:             ; 
+00004D60: E1A00001    ; MOV R0, R1
+00004D64: E8BD0002    ; POP {R1}
+00004D68: E1A0F00E    ; MOV PC, LR
+00004D6C:             ; 
+00004D6C: 00          ; tempCharPos DEFB 0
+00004D6D: 00          ; nullchar DEFB 0
+00004D70:             ; ALIGN
+00004D70:             ; 
+00004D70:             ; INCLUDE ../general/lcd.s
+00004D70:             ; ;###############################################
+00004D70:             ; ;# Written By: Sam da Costa                    #
+00004D70:             ; ;# Uni ID: p11469sd                            #
+00004D70:             ; ;# Exercise:  3                                #
+00004D70:             ; ;# Purpose: This file contains the subroutines #
+00004D70:             ; ;# printc and printstr to enable terminal      #
+00004D70:             ; ;# printing                                    #
+00004D70:             ; ;###############################################
+00004D70:             ; 
+00004D70:             ; ALIGN
+00004D70:             ; printc
+00004D70:             ; ;takes parameter R0 <- address of character
+00004D70:             ; ;leaf procedure
+00004D70: E92D1FFE    ; PUSH {R1 - R12}
+00004D74:             ; ;setup
+00004D74: E51F1B04    ; LDR         R1, cursorposx
+00004D78: E51F2B04    ; LDR         R2, cursorposy
+00004D7C: E3A03000    ; MOV         R3, #0
+00004D80: E3E04000    ; MOV         R4, #-1
+00004D84: E24F6008    ; ADRL        R6, bmask0
+00004D88: E2466B02    ; 
+00004D8C:             ; ; Corrects cursors for newline if needed
+00004D8C: E3510028    ; CMP         R1, #40
+00004D90: A2411028    ; SUBGE       R1, R1, #40
+00004D94: A2822001    ; ADDGE       R2, R2, #1
+00004D98:             ; ;calculates base address to draw from
+00004D98: E51F8804    ; LDR         R8, LCD_linediff
+00004D9C: E0080298    ; MUL         R8, R8, R2
+00004DA0: E51F9810    ; LDR         R9, charwidth
+00004DA4: E0090199    ; MUL         R9, R9, R1
+00004DA8: E0888009    ; ADD         R8, R8, R9
+00004DAC: E51F9828    ; LDR         R9, addr_LCD
+00004DB0: E0888009    ; ADD         R8, R8, R9        ;base now in R8, R9 free
+00004DB4:             ; ;----
+00004DB4:             ; ;handles incrememts of byte and bit
+00004DB4:             ; ;this procedure uses byte and bit as x and y respectively
+00004DB4:             ; next
+00004DB4: E3540007    ; CMP         R4, #7
+00004DB8: 03A04000    ; MOVEQ       R4, #0
+00004DBC: 02833001    ; ADDEQ       R3, R3, #1
+00004DC0: 12844001    ; ADDNE       R4, R4, #1
+00004DC4: E3530007    ; CMP         R3, #7
+00004DC8: 0A000015    ; BEQ         POSTEND
+00004DCC:             ; 
+00004DCC:             ; 
+00004DCC:             ; 
+00004DCC:             ; 
+00004DCC:             ; 
+00004DCC: E7D05003    ; LDRB        R5, [R0, R3] ;loads the font byte
+00004DD0: E7D67004    ; LDRB        R7, [R6, R4] ;loads the mask
+00004DD4: E0075005    ; AND         R5, R7, R5 ; check the bit
+00004DD8:             ; 
+00004DD8:             ; ;calculates address to write to
+00004DD8: E3A09003    ; MOV         R9, #3
+00004DDC: E0090399    ; MUL         R9, R9, R3
+00004DE0: E51FA854    ; LDR         R10, LCD_width
+00004DE4: E00A049A    ; MUL         R10, R10, R4
+00004DE8: E089900A    ; ADD         R9, R9, R10
+00004DEC: E0899008    ; ADD         R9, R9, R8      ;address to write in R9
+00004DF0:             ; 
+00004DF0: E1550007    ; CMP         R5, R7 ;determine which colour to draw in
+00004DF4: 0A000000    ; BEQ high
+00004DF8: 1A000004    ; BNE low
+00004DFC:             ; 
+00004DFC:             ; high ;no colour support yet - this would need to be changed
+00004DFC: E55FA864    ; LDRB R10, WHITE
+00004E00: E4C9A001    ; STRB R10, [R9], #1
+00004E04: E4C9A001    ; STRB R10, [R9], #1
+00004E08: E549A000    ; STRB R10, [R9]
+00004E0C: EAFFFFE8    ; B next
+00004E10:             ; 
+00004E10:             ; low
+00004E10: E55FA874    ; LDRB R10, BLACK
+00004E14: E4C9A001    ; STRB R10, [R9], #1
+00004E18: E4C9A001    ; STRB R10, [R9], #1
+00004E1C: E549A000    ; STRB R10, [R9]
+00004E20: EAFFFFE3    ; B next
+00004E24:             ; 
+00004E24:             ; POSTEND
+00004E24:             ; ;draws the 8th blank line
+00004E24: E3A0A003    ; MOV   R10, #3
+00004E28: E009039A    ; MUL   R9, R10, R3
+00004E2C: E51FA8A0    ; LDR   R10, LCD_width
+00004E30: E00A049A    ; MUL   R10, R10, R4
+00004E34: E089900A    ; ADD   R9, R9, R10
+00004E38: E51FA8B4    ; LDR   R10, addr_LCD
+00004E3C: E089900A    ; ADD   R9, R9, R10
+00004E40: E51FB8B0    ; LDR   R11, charwidth
+00004E44: E00A0B91    ; MUL   R10, R1, R11
+00004E48: E08A9009    ; ADD   R9, R10, R9
+00004E4C: E51FB8B8    ; LDR   R11, LCD_linediff
+00004E50: E00A0B92    ; MUL   R10, R2, R11
+00004E54: E08A9009    ; ADD   R9, R10, R9
+00004E58:             ; 
+00004E58: E55FA8BC    ; LDRB  R10, BLACK
+00004E5C: E4C9A001    ; STRB  R10, [R9], #1
+00004E60: E4C9A001    ; STRB  R10, [R9], #1
+00004E64: E549A000    ; STRB  R10, [R9]
+00004E68: E2844001    ; ADD   R4, R4, #1
+00004E6C: E3540008    ; CMP   R4, #8 ;re-uses bit counter reg
+00004E70: 1AFFFFEB    ; BNE POSTEND
+00004E74:             ; 
+00004E74:             ; ;update cursor positions below
+00004E74: E2811001    ; ADD   R1, R1, #1
+00004E78: E24FC008    ; ADRL  R12, cursorposx
+00004E7C: E24CCB03    ; 
+00004E80: E50C1000    ; STR   R1, [R12]
+00004E84: E24FCEC1    ; ADRL  R12, cursorposy
+00004E88: E50C2000    ; STR   R2, [R12]
+00004E8C:             ; 
+00004E8C:             ; 
+00004E8C:             ; 
+00004E8C:             ; ;return to program
+00004E8C: E8BD1FFE    ; POP {R1 - R12}
+00004E90: E1A0F00E    ; MOV PC, LR
+00004E94:             ; 
+00004E94:             ; ALIGN
+00004E94:             ; printstr
+00004E94:             ; ; address at R0
+00004E94:             ; ; assume LR was pushed
+00004E94: E92D01FE    ; PUSH {R1 - R8}
+00004E98: E92D4000    ; PUSH {LR}
+00004E9C: E1A08000    ; MOV           R8, R0        ; R0 will be overwritten soon
+00004EA0:             ; printnextc
+00004EA0: E4D81001    ; LDRB          R1, [R8], #1  ; get the next character
+00004EA4: E2512020    ; SUBS          R2, R1, #&20  ; subtract to get the ascii value to a known base
+00004EA8: BA000006    ; BLT control                 ; if branch taken: char is a control symbol else: char is an ascii 
+                      ; character
+00004EAC: E24F3FF3    ; ADRL          R3, font_32
+00004EB0: E2433B02    ; 
+00004EB4: E3A04007    ; MOV           R4, #7
+00004EB8: E0020492    ; MUL           R2, R2, R4    ; calculate offset to correct font
+00004EBC: E0830002    ; ADD           R0, R3, R2
+00004EC0: EBFFFFAA    ; BL printc
+00004EC4: EAFFFFF5    ; B printnextc
+00004EC8:             ; 
+00004EC8:             ; 
+00004EC8:             ; ; determines which control code needs executing
+00004EC8:             ; control
+00004EC8: E3510000    ; CMP           R1, #00
+00004ECC: 0A000048    ; BEQ           exitstring      ; terminate if 0 seen
+00004ED0:             ; 
+00004ED0: E3510008    ; CMP           R1, #&08
+00004ED4: 0A000009    ; BEQ           c_backspace
+00004ED8:             ; 
+00004ED8: E3510009    ; CMP           R1, #&09
+00004EDC: 0A000017    ; BEQ           c_HT
+00004EE0:             ; 
+00004EE0: E351000A    ; CMP           R1, #&0A
+00004EE4: 0A000021    ; BEQ           c_LF
+00004EE8:             ; 
+00004EE8: E351000B    ; CMP           R1, #&0B
+00004EEC: 0A000026    ; BEQ           c_VT
+00004EF0:             ; 
+00004EF0: E351000C    ; CMP           R1, #&0C
+00004EF4: 0A00002B    ; BEQ           c_FF
+00004EF8:             ; 
+00004EF8: E351000D    ; CMP           R1, #&0D
+00004EFC: 0A000037    ; BEQ           c_CR
+00004F00:             ; 
+00004F00:             ; 
+00004F00:             ; ;the following methods change the cursorposx, cursorposy values
+00004F00:             ; ;such that the cursor is in the correct position after a control code
+00004F00:             ; ;using R5,6,7
+00004F00:             ; c_backspace
+00004F00: E51F5C90    ; LDR     R5, cursorposx
+00004F04: E51F6C90    ; LDR     R6, cursorposy
+00004F08: E3550000    ; CMP     R5, #0
+00004F0C: 1A000004    ; BNE     subtract
+00004F10: E3560000    ; CMP     R6, #0
+00004F14: 0A000003    ; BEQ     quitcontrol
+00004F18: E2466001    ; SUB     R6, R6, #1
+00004F1C: E3A05027    ; MOV     R5, #39
+00004F20: EA000000    ; B quitcontrol
+00004F24:             ; 
+00004F24:             ; subtract
+00004F24: E2455001    ; SUB     R5, R5, #1
+00004F28:             ; quitcontrol
+00004F28: E24F70B8    ; ADRL    R7, cursorposx
+00004F2C: E2477B03    ; 
+00004F30: E5075000    ; STR     R5, [R7]
+00004F34: E24F7D33    ; ADRL    R7, cursorposy
+00004F38: E5076000    ; STR     R6, [R7]
+00004F3C: EAFFFFD7    ; B printnextc
+00004F40:             ; 
+00004F40:             ; c_HT
+00004F40: E51F5CD0    ; LDR     R5, cursorposx
+00004F44: E51F6CD0    ; LDR     R6, cursorposy
+00004F48: E2855001    ; ADD     R5, R5, #1
+00004F4C: E3550028    ; CMP     R5, #40
+00004F50: A2455028    ; SUBGE   R5, R5, #40
+00004F54: A2866001    ; ADDGE   R6, R6, #1
+00004F58: E24F70E8    ; ADRL    R7, cursorposx
+00004F5C: E2477B03    ; 
+00004F60: E5075000    ; STR     R5, [R7]
+00004F64: E24F7ECF    ; ADRL    R7, cursorposy
+00004F68: E5076000    ; STR     R6, [R7]
+00004F6C: EAFFFFCB    ; B printnextc
+00004F70:             ; 
+00004F70:             ; c_LF
+00004F70: E51F6CFC    ; LDR     R6, cursorposy
+00004F74: E356001D    ; CMP     R6, #29
+00004F78: 12866001    ; ADDNE   R6, R6, #1
+00004F7C: E24F7F42    ; ADRL    R7, cursorposy
+00004F80: E2477B03    ; 
+00004F84: E5076000    ; STR     R6, [R7]
+00004F88: EAFFFFC4    ; B printnextc
+00004F8C:             ; 
+00004F8C:             ; c_VT
+00004F8C: E51F6D18    ; LDR     R6, cursorposy
+00004F90: E3560000    ; CMP     R6, #0
+00004F94: C2466001    ; SUBGT   R6, R6, #1
+00004F98: E24F7F49    ; ADRL    R7, cursorposy
+00004F9C: E2477B03    ; 
+00004FA0: E5076000    ; STR     R6, [R7]
+00004FA4: EAFFFFBD    ; B printnextc
+00004FA8:             ; 
+00004FA8:             ; c_FF
+00004FA8: E51F5A24    ; LDR     R5, addr_LCD
+00004FAC: E55F6A10    ; LDRB    R6, BLACK
+00004FB0: E51F7A28    ; LDR     R7, addr_LCD_end
+00004FB4:             ; screenblankloop
+00004FB4: E4C56001    ; STRB    R6, [R5], #1
+00004FB8: E1550007    ; CMP     R5, R7
+00004FBC: 1AFFFFFC    ; BNE screenblankloop
+00004FC0: E3A05000    ; MOV     R5, #0
+00004FC4: E24F6F55    ; ADRL    R6, cursorposx
+00004FC8: E2466B03    ; 
+00004FCC: E5065000    ; STR     R5, [R6]
+00004FD0: E24F6F57    ; ADRL    R6, cursorposy
+00004FD4: E2466B03    ; 
+00004FD8: E5065000    ; STR     R5, [R6]
+00004FDC: EAFFFFAF    ; B printnextc
+00004FE0:             ; 
+00004FE0:             ; c_CR
+00004FE0: E3A06000    ; MOV     R6, #0
+00004FE4: E24F7F5D    ; ADRL    R7, cursorposx
+00004FE8: E2477B03    ; 
+00004FEC: E5076000    ; STR     R6, [R7]
+00004FF0: EAFFFFAA    ; B printnextc
+00004FF4:             ; 
+00004FF4:             ; ; cleanup and exit
+00004FF4:             ; exitstring
+00004FF4: E8BD4000    ; POP {LR}
+00004FF8: E8BD01FE    ; POP {R1 - R8}
+00004FFC: E1A0F00E    ; MOV PC, LR
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; ;---------------------------------------
+00005000:             ; ;  DEFINITIONS
+00005000:             ; ;---------------------------------------
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; 
+00005000:             ; align
+00005000:             ; 
+00005000:             ; 
+
+Symbol Table: Labels
+: SVC_MAX                           00000020  Local -- ARM
+: reset_handler                     00000024  Local -- ARM
+: undefined_instruction_handler     000000D8  Local -- ARM
+: svc_handler                       000000E8  Local -- ARM
+: svc_entry                         000000F8  Local -- ARM
+: jump_t                            00000110  Local -- ARM
+: SVC_0                             00000124  Local -- ARM
+: SVC_unknown                       00000124  Local -- ARM
+: SVC_1                             00000128  Local -- ARM
+: addr_timer                        0000013C  Local -- ARM
+: addr_ABCDButtons                  00000140  Local -- ARM
+: SVC_2                             00000144  Local -- ARM
+: SVC_3                             00000160  Local -- ARM
+: SVC_4                             00000174  Local -- ARM
+: prefetch_abort_handler            00000178  Local -- ARM
+: data_abort                        0000017C  Local -- ARM
+: IRQ_handler                       00000180  Local -- ARM
+: aloop                             000001B8  Local -- ARM
+: bloop                             000001C0  Local -- ARM
+: doinc                             000001E8  Local -- ARM
+: skipinc                           000001F8  Local -- ARM
+: nextIRQ                           0000021C  Local -- ARM
+: halt                              00000228  Local -- ARM
+: checkTable                        00000230  Local -- ARM
+: addr_interrupts                   00000234  Local -- ARM
+: addr_interrupts_mask              00000238  Local -- ARM
+: addr_timer_compare                0000023C  Local -- ARM
+: addr_timer_enable                 00000240  Local -- ARM
+: addr_keyboard_matrix              00000244  Local -- ARM
+: keypresses                        00000248  Local -- ARM
+: k_3                               00000248  Local -- ARM
+: k_6                               00000249  Local -- ARM
+: k_9                               0000024A  Local -- ARM
+: k_hash                            0000024B  Local -- ARM
+: k_2                               0000024C  Local -- ARM
+: k_5                               0000024D  Local -- ARM
+: k_8                               0000024E  Local -- ARM
+: k_0                               0000024F  Local -- ARM
+: k_1                               00000250  Local -- ARM
+: k_4                               00000251  Local -- ARM
+: k_7                               00000252  Local -- ARM
+: k_star                            00000253  Local -- ARM
+: data1                             00000254  Local -- ARM
+: wipeline                          00000258  Local -- ARM
+: char0                             00000260  Local -- ARM
+: char1                             00000268  Local -- ARM
+: FIQ_handler                       00000270  Local -- ARM
+: stack_user                        00000278  Local -- ARM
+: stackend_user                     00002278  Local -- ARM
+: stack_svc                         00002278  Local -- ARM
+: stackend_svc                      00003278  Local -- ARM
+: stack_IRQ                         00003278  Local -- ARM
+: stackend_IRQ                      00003278  Local -- ARM
+: data                              00004278  Local -- ARM
+: cursorposx                        00004278  Local -- ARM
+: cursorposy                        0000427C  Local -- ARM
+: MemoryError_pre                   00004280  Local -- ARM
+: MemoryError_dat                   000042A4  Local -- ARM
+: UndefinedError                    000042C4  Local -- ARM
+: font_32                           000042E8  Local -- ARM
+: font_33                           000042EF  Local -- ARM
+: font_34                           000042F6  Local -- ARM
+: font_35                           000042FD  Local -- ARM
+: font_36                           00004304  Local -- ARM
+: font_37                           0000430B  Local -- ARM
+: font_38                           00004312  Local -- ARM
+: font_39                           00004319  Local -- ARM
+: font_40                           00004320  Local -- ARM
+: font_41                           00004327  Local -- ARM
+: font_42                           0000432E  Local -- ARM
+: font_43                           00004335  Local -- ARM
+: font_44                           0000433C  Local -- ARM
+: font_45                           00004343  Local -- ARM
+: font_46                           0000434A  Local -- ARM
+: font_47                           00004351  Local -- ARM
+: font_48                           00004358  Local -- ARM
+: font_49                           0000435F  Local -- ARM
+: font_50                           00004366  Local -- ARM
+: font_51                           0000436D  Local -- ARM
+: font_52                           00004374  Local -- ARM
+: font_53                           0000437B  Local -- ARM
+: font_54                           00004382  Local -- ARM
+: font_55                           00004389  Local -- ARM
+: font_56                           00004390  Local -- ARM
+: font_57                           00004397  Local -- ARM
+: font_58                           0000439E  Local -- ARM
+: font_59                           000043A5  Local -- ARM
+: font_60                           000043AC  Local -- ARM
+: font_61                           000043B3  Local -- ARM
+: font_62                           000043BA  Local -- ARM
+: font_63                           000043C1  Local -- ARM
+: font_64                           000043C8  Local -- ARM
+: font_65                           000043CF  Local -- ARM
+: font_66                           000043D6  Local -- ARM
+: font_67                           000043DD  Local -- ARM
+: font_68                           000043E4  Local -- ARM
+: font_69                           000043EB  Local -- ARM
+: font_70                           000043F2  Local -- ARM
+: font_71                           000043F9  Local -- ARM
+: font_72                           00004400  Local -- ARM
+: font_73                           00004407  Local -- ARM
+: font_74                           0000440E  Local -- ARM
+: font_75                           00004415  Local -- ARM
+: font_76                           0000441C  Local -- ARM
+: font_77                           00004423  Local -- ARM
+: font_78                           0000442A  Local -- ARM
+: font_79                           00004431  Local -- ARM
+: font_80                           00004438  Local -- ARM
+: font_81                           0000443F  Local -- ARM
+: font_82                           00004446  Local -- ARM
+: font_83                           0000444D  Local -- ARM
+: font_84                           00004454  Local -- ARM
+: font_85                           0000445B  Local -- ARM
+: font_86                           00004462  Local -- ARM
+: font_87                           00004469  Local -- ARM
+: font_88                           00004470  Local -- ARM
+: font_89                           00004477  Local -- ARM
+: font_90                           0000447E  Local -- ARM
+: font_91                           00004485  Local -- ARM
+: font_92                           0000448C  Local -- ARM
+: font_93                           00004493  Local -- ARM
+: font_94                           0000449A  Local -- ARM
+: font_95                           000044A1  Local -- ARM
+: font_96                           000044A8  Local -- ARM
+: font_97                           000044AF  Local -- ARM
+: font_98                           000044B6  Local -- ARM
+: font_99                           000044BD  Local -- ARM
+: font_100                          000044C4  Local -- ARM
+: font_101                          000044CB  Local -- ARM
+: font_102                          000044D2  Local -- ARM
+: font_103                          000044D9  Local -- ARM
+: font_104                          000044E0  Local -- ARM
+: font_105                          000044E7  Local -- ARM
+: font_106                          000044EE  Local -- ARM
+: font_107                          000044F5  Local -- ARM
+: font_108                          000044FC  Local -- ARM
+: font_109                          00004503  Local -- ARM
+: font_110                          0000450A  Local -- ARM
+: font_111                          00004511  Local -- ARM
+: font_112                          00004518  Local -- ARM
+: font_113                          0000451F  Local -- ARM
+: font_114                          00004526  Local -- ARM
+: font_115                          0000452D  Local -- ARM
+: font_116                          00004534  Local -- ARM
+: font_117                          0000453B  Local -- ARM
+: font_118                          00004542  Local -- ARM
+: font_119                          00004549  Local -- ARM
+: font_120                          00004550  Local -- ARM
+: font_121                          00004557  Local -- ARM
+: font_122                          0000455E  Local -- ARM
+: font_123                          00004565  Local -- ARM
+: font_124                          0000456C  Local -- ARM
+: font_125                          00004573  Local -- ARM
+: font_126                          0000457A  Local -- ARM
+: bmask0                            00004584  Local -- ARM
+: bmask1                            00004585  Local -- ARM
+: bmask2                            00004586  Local -- ARM
+: bmask3                            00004587  Local -- ARM
+: bmask4                            00004588  Local -- ARM
+: bmask5                            00004589  Local -- ARM
+: bmask6                            0000458A  Local -- ARM
+: bmask7                            0000458B  Local -- ARM
+: addr_LCD                          0000458C  Local -- ARM
+: addr_LCD_end                      00004590  Local -- ARM
+: LCD_width                         00004594  Local -- ARM
+: charwidth                         00004598  Local -- ARM
+: LCD_linediff                      0000459C  Local -- ARM
+: WHITE                             000045A0  Local -- ARM
+: BLACK                             000045A4  Local -- ARM
+: FONT_WIDTH                        000045A8  Local -- ARM
+: FONT_HEIGHT                       000045AC  Local -- ARM
+: nullstring                        000045B0  Local -- ARM
+: backspace                         000045B1  Local -- ARM
+: HT                                000045B3  Local -- ARM
+: LF                                000045B5  Local -- ARM
+: VT                                000045B7  Local -- ARM
+: FF                                000045B9  Local -- ARM
+: CR                                000045BB  Local -- ARM
+: BLANK                             000045BD  Local -- ARM
+: svc_0                             00000100  Value
+: svc_1                             00000101  Value
+: svc_2                             00000102  Value
+: svc_3                             00000103  Value
+: usercode                          000045C0  Local -- ARM
+: scanKeyStart                      000045F8  Local -- ARM
+: ABCDloop                          00004604  Local -- ARM
+: buttonFound                       00004620  Local -- ARM
+: waitForABCDreset                  0000465C  Local -- ARM
+: checkKeypad                       00004668  Local -- ARM
+: scanKeyInner                      0000466C  Local -- ARM
+: hash                              000046A0  Local -- ARM
+: checkForMinus                     000046CC  Local -- ARM
+: checkForMult                      000046E0  Local -- ARM
+: checkForDiv                       000046F4  Local -- ARM
+: endOfOperatorChecks               00004708  Local -- ARM
+: skipStateChange                   00004708  Local -- ARM
+: star                              0000470C  Local -- ARM
+: waitForReset                      00004728  Local -- ARM
+: continueScan                      00004734  Local -- ARM
+: getNums                           00004744  Local -- ARM
+: outputNums                        00004764  Local -- ARM
+: keyvalues                         00004784  Local -- ARM
+: STATE1                            00000000  Value
+: STATE2                            00000001  Value
+: curstate                          00004790  Local -- ARM
+: curline                           00004791  Local -- ARM
+: operator                          00004792  Local -- ARM
+: return                            00004793  Local -- ARM
+: blank                             00004795  Local -- ARM
+: hardblank                         00004797  Local -- ARM
+: printbit                          00004799  Local -- ARM
+: printbitend                       0000479A  Local -- ARM
+: threshold                         00000004  Value
+: table_nums                        00000001  Value
+: table_size                        00000008  Value
+: table_bases                       0000479B  Local -- ARM
+: table_num2                        000047A4  Local -- ARM
+: table1sign                        000047AC  Local -- ARM
+: table2sign                        000047AD  Local -- ARM
+: loadSigns                         000047B0  Local -- ARM
+: multDivLogic                      000047BC  Local -- ARM
+: runAdd                            000047D0  Local -- ARM
+: resolveAdditionSign               000047EC  Local -- ARM
+: endRunAdd                         00004804  Local -- ARM
+: runSub                            00004810  Local -- ARM
+: runMul                            00004834  Local -- ARM
+: runDiv                            00004858  Local -- ARM
+: unsignedIntegerDivision           0000487C  Local -- ARM
+: divLoop                           00004890  Local -- ARM
+: skipDivision                      000048A4  Local -- ARM
+: setOperator                       000048A8  Local -- ARM
+: c_plus                            00004910  Local -- ARM
+: c_minus                           00004912  Local -- ARM
+: c_divide                          00004914  Local -- ARM
+: c_multiply                        00004916  Local -- ARM
+: C_plus                            00000001  Value
+: C_minus                           00000002  Value
+: C_divide                          00000003  Value
+: C_multiply                        00000004  Value
+: copyTable                         00004918  Local -- ARM
+: copyLoop                          0000494C  Local -- ARM
+: convertNumToTable                 00004974  Local -- ARM
+: writeLoop                         000049A8  Local -- ARM
+: convertIndexToValue               000049DC  Local -- ARM
+: clearTable                        00004A00  Local -- ARM
+: clearLoop                         00004A24  Local -- ARM
+: pushNewChar                       00004A40  Local -- ARM
+: convertTableToNum                 00004A5C  Local -- ARM
+: addLoop                           00004A8C  Local -- ARM
+: shiftchars                        00004AB8  Local -- ARM
+: startShiftLoop                    00004ADC  Local -- ARM
+: printline                         00004B00  Local -- ARM
+: moveCursor                        00004B0C  Local -- ARM
+: blankSign                         00004B40  Local -- ARM
+: skipSign                          00004B58  Local -- ARM
+: startprintingnum                  00004BA4  Local -- ARM
+: blankSpace                        00004BEC  Local -- ARM
+: zeroCheck                         00004C04  Local -- ARM
+: end                               00004C30  Local -- ARM
+: VTloop                            00004C4C  Local -- ARM
+: bcd_convert                       00004C6C  Local -- ARM
+: bcd_loop                          00004C7C  Local -- ARM
+: bcd_out                           00004C98  Local -- ARM
+: dec_table                         00004CA8  Local -- ARM
+: divide                            00004CD0  Local -- ARM
+: divide1                           00004CDC  Local -- ARM
+: hexprint                          00004CFC  Local -- ARM
+: hexprint_sub                      00004D34  Local -- ARM
+: tempCharPos                       00004D6C  Local -- ARM
+: nullchar                          00004D6D  Local -- ARM
+: printc                            00004D70  Local -- ARM
+: next                              00004DB4  Local -- ARM
+: high                              00004DFC  Local -- ARM
+: low                               00004E10  Local -- ARM
+: POSTEND                           00004E24  Local -- ARM
+: printstr                          00004E94  Local -- ARM
+: printnextc                        00004EA0  Local -- ARM
+: control                           00004EC8  Local -- ARM
+: c_backspace                       00004F00  Local -- ARM
+: subtract                          00004F24  Local -- ARM
+: quitcontrol                       00004F28  Local -- ARM
+: c_HT                              00004F40  Local -- ARM
+: c_LF                              00004F70  Local -- ARM
+: c_VT                              00004F8C  Local -- ARM
+: c_FF                              00004FA8  Local -- ARM
+: screenblankloop                   00004FB4  Local -- ARM
+: c_CR                              00004FE0  Local -- ARM
+: exitstring                        00004FF4  Local -- ARM

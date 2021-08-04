@@ -1,0 +1,4 @@
+F1002000 is for enabling RW of data
+F1002004 bits 7,6,5 are for setting lines
+Read(F1002004) bits 3, 2, 1, 0 to determine key
+Proccesor must be running to determine keys

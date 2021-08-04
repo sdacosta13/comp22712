@@ -1,0 +1,25 @@
+KMD
+00000000:             ; ORIGIN &00000000
+00000000: EA000005    ; B reset_handler                       ; +0   (00)
+00000004: EA000004    ; B undefined_instruction_handler       ; +4   (04)
+00000008: EA000003    ; B svc_handler                         ; +8   (08)
+0000000C: EA000002    ; B prefetch_abort_handler              ; +12  (0C)
+00000010: E1A00000    ; NOP                                   ; +16  (10)
+00000014: EA000000    ; B IRQ_handler                         ; +20  (14)
+00000018: EAFFFFFF    ; B FIQ_handler                         ; +24  (18)
+0000001C:             ; 
+0000001C:             ; reset_handler
+0000001C:             ; undefined_instruction_handler
+0000001C:             ; svc_handler
+0000001C:             ; prefetch_abort_handler
+0000001C:             ; IRQ_handler
+0000001C:             ; FIQ_handler
+0000001C:             ; 
+
+Symbol Table: Labels
+: reset_handler                     0000001C  Local -- ARM
+: undefined_instruction_handler     0000001C  Local -- ARM
+: svc_handler                       0000001C  Local -- ARM
+: prefetch_abort_handler            0000001C  Local -- ARM
+: IRQ_handler                       0000001C  Local -- ARM
+: FIQ_handler                       0000001C  Local -- ARM

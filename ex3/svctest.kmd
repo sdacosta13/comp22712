@@ -1,0 +1,824 @@
+KMD
+00000000:             ; INCLUDE os.s
+00000000:             ; ORIGIN &00000000
+00000000: EA000007    ; B reset_handler                       ; +0   (00)
+00000004: EA00001E    ; B undefined_instruction_handler       ; +4   (04)
+00000008: EA000021    ; B svc_handler                         ; +8   (08)
+0000000C: EA00003A    ; B prefetch_abort_handler              ; +12  (0C)
+00000010: EA000043    ; B data_abort                          ; +16  (10)
+00000014: E1A00000    ; NOP                                   ; +20  (14)
+00000018: EA00004B    ; B IRQ_handler                         ; +24  (18)
+0000001C: EA00004B    ; B FIQ_handler                         ; +28  (1C)
+00000020: 00000103    ; SVC_MAX DEFW &00000103
+00000024:             ; reset_handler ; code to reset the proccesor to known state
+00000024: E3A00000    ; MOV R0, #0
+00000028: E3A01000    ; MOV R1, #0
+0000002C: E3A02000    ; MOV R2, #0
+00000030: E3A03000    ; MOV R3, #0
+00000034: E3A04000    ; MOV R4, #0
+00000038: E3A05000    ; MOV R5, #0
+0000003C: E3A06000    ; MOV R6, #0
+00000040: E3A07000    ; MOV R7, #0
+00000044: E3A08000    ; MOV R8, #0
+00000048: E3A09000    ; MOV R9, #0
+0000004C: E3A0A000    ; MOV R10, #0
+00000050: E3A0B000    ; MOV R11, #0
+00000054: E3A0C000    ; MOV R12, #0
+00000058: E28FD0FC    ; ADRL SP, stackend_svc
+0000005C: E28DDA02    ; 
+00000060: E28F0035    ; ADRL R0, FF
+00000064: E2800B09    ; 
+00000068: EB00095C    ; BL printstr   ;blanks screen and resets cursorposx and cursorposy
+0000006C: E10F0000    ; MRS  R0, CPSR
+00000070: E3C0000F    ; BIC  R0, R0, #&0F
+00000074: E121F000    ; MSR CPSR_c, R0
+00000078: E28FD0DC    ; ADRL SP, stackend_user
+0000007C: E28DDA01    ; 
+00000080: EA000907    ; B usercode
+00000084:             ; 
+00000084:             ; ; Jump to user code
+00000084:             ; undefined_instruction_handler
+00000084: E28F0F47    ; ADRL R0, UndefinedError
+00000088: E2800A02    ; 
+0000008C: EB000953    ; BL printstr
+00000090: EA00002F    ; B halt
+00000094:             ; 
+00000094:             ; svc_handler
+00000094:             ; ;svcs start at hex 100
+00000094: E92D4000    ; PUSH {LR}
+00000098: E92D1000    ; PUSH {R12}
+0000009C: E51EE004    ; LDR R14, [LR, #-4]
+000000A0: E3CEE4FF    ; BIC R14, R14, #&FF000000
+000000A4:             ; svc_entry
+000000A4: E51FC08C    ; LDR R12, SVC_MAX
+000000A8: E15E000C    ; CMP R14, R12
+000000AC: 8A000006    ; BHI SVC_unknown
+000000B0: E24EEC01    ; SUB R14, R14, #&100 ;normalising base to avoid predefined svcs
+000000B4: E08FE10E    ; ADD R14, PC, R14, LSL #2
+000000B8: E59EF000    ; LDR PC, [R14, #0]
+000000BC:             ; 
+000000BC:             ; jump_t
+000000BC: 000000CC    ; DEFW SVC_0 ;halt
+000000C0: 000000D0    ; DEFW SVC_1 ;printstr
+000000C4: 000000E8    ; DEFW SVC_2
+000000C8: 000000FC    ; DEFW SVC_3
+000000CC:             ; ; Move back to usercode
+000000CC:             ; ; MOVS PC, LR ; special case
+000000CC:             ; SVC_0
+000000CC:             ; SVC_unknown
+000000CC: EA000020    ; B halt
+000000D0:             ; SVC_1
+000000D0: EB000942    ; BL printstr
+000000D4: E8BD1000    ; POP{R12}
+000000D8: E8BD4000    ; POP{LR}
+000000DC: E1B0F00E    ; MOVS PC, LR
+000000E0: EA00001B    ; B halt
+000000E4:             ; 
+000000E4: F1001010    ; addr_timer          DEFW 0xF1001010
+000000E8:             ; SVC_2 ;move timer into R0
+000000E8: E92D003E    ; PUSH {R1 - R5}
+000000EC: E51F1010    ; LDR R1, addr_timer
+000000F0: E5510000    ; LDRB R0, [R1]
+000000F4: E8BD003E    ; POP{R1 - R5}
+000000F8: E1B0F00E    ; MOVS PC, LR
+000000FC:             ; 
+000000FC:             ; SVC_3
+000000FC:             ; prefetch_abort_handler
+000000FC: E28F009B    ; ADRL R0, CR
+00000100: E2800C23    ; 
+00000104: EB000935    ; BL printstr
+00000108: E28F0089    ; ADRL R0, LF
+0000010C: E2800C23    ; 
+00000110: EB000932    ; BL printstr
+00000114: E28F0048    ; ADRL R0, MemoryError_pre
+00000118: E2800A02    ; 
+0000011C: EB00092F    ; BL printstr
+00000120: EA00000B    ; B halt
+00000124:             ; 
+00000124:             ; data_abort
+00000124: E28F0073    ; ADRL R0, CR
+00000128: E2800C23    ; 
+0000012C: EB00092B    ; BL printstr
+00000130: E28F0061    ; ADRL R0, LF
+00000134: E2800C23    ; 
+00000138: EB000928    ; BL printstr
+0000013C: E28F0044    ; ADRL R0, MemoryError_dat
+00000140: E2800A02    ; 
+00000144: EB000925    ; BL printstr
+00000148: EA000001    ; B halt
+0000014C:             ; 
+0000014C:             ; IRQ_handler
+0000014C: EA000000    ; B halt
+00000150:             ; 
+00000150:             ; FIQ_handler
+00000150: EAFFFFFF    ; B halt
+00000154:             ; 
+00000154:             ; halt
+00000154: E1A00000    ; MOV R0, R0
+00000158: EAFFFFFD    ; B halt
+0000015C:             ; ALIGN
+0000015C:             ; stack_user DEFS &1000
+0000115C:             ; stackend_user
+0000115C:             ; stack_svc DEFS &1000
+0000215C:             ; stackend_svc
+0000215C:             ; ALIGN
+0000215C:             ; data
+0000215C: 00000000    ; cursorposx      DEFW 0
+00002160: 00000000    ; cursorposy      DEFW 0
+00002164:             ; ALIGN
+00002164:             ; ALIGN
+00002164: 4D 65 6D 6F ; MemoryError_pre     DEFB "Memory Error has occured (Prefetch)",0
+00002168: 72 79 20 45 ; 
+0000216C: 72 72 6F 72 ; 
+00002170: 20 68 61 73 ; 
+00002174: 20 6F 63 63 ; 
+00002178: 75 72 65 64 ; 
+0000217C: 20 28 50 72 ; 
+00002180: 65 66 65 74 ; 
+00002184: 63 68 29 00 ; 
+00002188: 4D 65 6D 6F ; MemoryError_dat     DEFB "Memory Error has occured (Data)",0
+0000218C: 72 79 20 45 ; 
+00002190: 72 72 6F 72 ; 
+00002194: 20 68 61 73 ; 
+00002198: 20 6F 63 63 ; 
+0000219C: 75 72 65 64 ; 
+000021A0: 20 28 44 61 ; 
+000021A4: 74 61 29 00 ; 
+000021A8:             ; ALIGN
+000021A8: 55 6E 64 65 ; UndefinedError  DEFB "Undefined Instruction encountered",0
+000021AC: 66 69 6E 65 ; 
+000021B0: 64 20 49 6E ; 
+000021B4: 73 74 72 75 ; 
+000021B8: 63 74 69 6F ; 
+000021BC: 6E 20 65 6E ; 
+000021C0: 63 6F 75 6E ; 
+000021C4: 74 65 72 65 ; 
+000021C8: 64 00       ; 
+000021CC:             ; ALIGN
+000021CC:             ; INCLUDE characterDefinitions.s
+000021CC: 00 00 00 00 ; font_32 defb 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000021D0: 00 00 00    ; 
+000021D3: 5F 00 00 00 ; font_33 defb 0x5f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000021D7: 00 00 00    ; 
+000021DA: 03 00 03 00 ; font_34 defb 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00
+000021DE: 00 00 00    ; 
+000021E1: 14 7F 14 7F ; font_35 defb 0x14, 0x7f, 0x14, 0x7f, 0x14, 0x00, 0x00
+000021E5: 14 00 00    ; 
+000021E8: 6F 49 C9 7B ; font_36 defb 0x6f, 0x49, 0xc9, 0x7b, 0x00, 0x00, 0x00
+000021EC: 00 00 00    ; 
+000021EF: 63 13 08 64 ; font_37 defb 0x63, 0x13, 0x08, 0x64, 0x63, 0x00, 0x00
+000021F3: 63 00 00    ; 
+000021F6: 7F C9 49 63 ; font_38 defb 0x7f, 0xc9, 0x49, 0x63, 0x00, 0x00, 0x00
+000021FA: 00 00 00    ; 
+000021FD: 03 00 00 00 ; font_39 defb 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002201: 00 00 00    ; 
+00002204: 3E 41 00 00 ; font_40 defb 0x3e, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00
+00002208: 00 00 00    ; 
+0000220B: 41 3E 00 00 ; font_41 defb 0x41, 0x3e, 0x00, 0x00, 0x00, 0x00, 0x00
+0000220F: 00 00 00    ; 
+00002212: 0A 04 1F 04 ; font_42 defb 0x0a, 0x04, 0x1f, 0x04, 0x0a, 0x00, 0x00
+00002216: 0A 00 00    ; 
+00002219: 08 08 3E 08 ; font_43 defb 0x08, 0x08, 0x3e, 0x08, 0x08, 0x00, 0x00
+0000221D: 08 00 00    ; 
+00002220: C0 00 00 00 ; font_44 defb 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002224: 00 00 00    ; 
+00002227: 08 08 08 08 ; font_45 defb 0x08, 0x08, 0x08, 0x08, 0x00, 0x00, 0x00
+0000222B: 00 00 00    ; 
+0000222E: 40 00 00 00 ; font_46 defb 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002232: 00 00 00    ; 
+00002235: 60 10 08 04 ; font_47 defb 0x60, 0x10, 0x08, 0x04, 0x03, 0x00, 0x00
+00002239: 03 00 00    ; 
+0000223C: 7F 41 41 7F ; font_48 defb 0x7f, 0x41, 0x41, 0x7f, 0x00, 0x00, 0x00
+00002240: 00 00 00    ; 
+00002243: 01 7F 00 00 ; font_49 defb 0x01, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00
+00002247: 00 00 00    ; 
+0000224A: 7B 49 49 6F ; font_50 defb 0x7b, 0x49, 0x49, 0x6f, 0x00, 0x00, 0x00
+0000224E: 00 00 00    ; 
+00002251: 63 49 49 7F ; font_51 defb 0x63, 0x49, 0x49, 0x7f, 0x00, 0x00, 0x00
+00002255: 00 00 00    ; 
+00002258: 0F 08 08 7F ; font_52 defb 0x0f, 0x08, 0x08, 0x7f, 0x00, 0x00, 0x00
+0000225C: 00 00 00    ; 
+0000225F: 6F 49 49 7B ; font_53 defb 0x6f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+00002263: 00 00 00    ; 
+00002266: 7F 49 49 7B ; font_54 defb 0x7f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+0000226A: 00 00 00    ; 
+0000226D: 03 01 01 7F ; font_55 defb 0x03, 0x01, 0x01, 0x7f, 0x00, 0x00, 0x00
+00002271: 00 00 00    ; 
+00002274: 7F 49 49 7F ; font_56 defb 0x7f, 0x49, 0x49, 0x7f, 0x00, 0x00, 0x00
+00002278: 00 00 00    ; 
+0000227B: 0F 09 09 7F ; font_57 defb 0x0f, 0x09, 0x09, 0x7f, 0x00, 0x00, 0x00
+0000227F: 00 00 00    ; 
+00002282: 41 00 00 00 ; font_58 defb 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002286: 00 00 00    ; 
+00002289: C1 00 00 00 ; font_59 defb 0xc1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+0000228D: 00 00 00    ; 
+00002290: 08 14 22 00 ; font_60 defb 0x08, 0x14, 0x22, 0x00, 0x00, 0x00, 0x00
+00002294: 00 00 00    ; 
+00002297: 14 14 14 14 ; font_61 defb 0x14, 0x14, 0x14, 0x14, 0x00, 0x00, 0x00
+0000229B: 00 00 00    ; 
+0000229E: 22 14 08 00 ; font_62 defb 0x22, 0x14, 0x08, 0x00, 0x00, 0x00, 0x00
+000022A2: 00 00 00    ; 
+000022A5: 03 59 09 0F ; font_63 defb 0x03, 0x59, 0x09, 0x0f, 0x00, 0x00, 0x00
+000022A9: 00 00 00    ; 
+000022AC: 7F 41 5D 55 ; font_64 defb 0x7f, 0x41, 0x5d, 0x55, 0x5f, 0x00, 0x00
+000022B0: 5F 00 00    ; 
+000022B3: 7F 09 09 7F ; font_65 defb 0x7f, 0x09, 0x09, 0x7f, 0x00, 0x00, 0x00
+000022B7: 00 00 00    ; 
+000022BA: 7F 49 49 77 ; font_66 defb 0x7f, 0x49, 0x49, 0x77, 0x00, 0x00, 0x00
+000022BE: 00 00 00    ; 
+000022C1: 7F 41 41 63 ; font_67 defb 0x7f, 0x41, 0x41, 0x63, 0x00, 0x00, 0x00
+000022C5: 00 00 00    ; 
+000022C8: 7F 41 41 3E ; font_68 defb 0x7f, 0x41, 0x41, 0x3e, 0x00, 0x00, 0x00
+000022CC: 00 00 00    ; 
+000022CF: 7F 49 49 63 ; font_69 defb 0x7f, 0x49, 0x49, 0x63, 0x00, 0x00, 0x00
+000022D3: 00 00 00    ; 
+000022D6: 7F 09 09 03 ; font_70 defb 0x7f, 0x09, 0x09, 0x03, 0x00, 0x00, 0x00
+000022DA: 00 00 00    ; 
+000022DD: 7F 41 49 7B ; font_71 defb 0x7f, 0x41, 0x49, 0x7b, 0x00, 0x00, 0x00
+000022E1: 00 00 00    ; 
+000022E4: 7F 08 08 7F ; font_72 defb 0x7f, 0x08, 0x08, 0x7f, 0x00, 0x00, 0x00
+000022E8: 00 00 00    ; 
+000022EB: 41 7F 41 00 ; font_73 defb 0x41, 0x7f, 0x41, 0x00, 0x00, 0x00, 0x00
+000022EF: 00 00 00    ; 
+000022F2: 60 40 40 7F ; font_74 defb 0x60, 0x40, 0x40, 0x7f, 0x00, 0x00, 0x00
+000022F6: 00 00 00    ; 
+000022F9: 7F 08 08 77 ; font_75 defb 0x7f, 0x08, 0x08, 0x77, 0x00, 0x00, 0x00
+000022FD: 00 00 00    ; 
+00002300: 7F 40 40 60 ; font_76 defb 0x7f, 0x40, 0x40, 0x60, 0x00, 0x00, 0x00
+00002304: 00 00 00    ; 
+00002307: 7F 01 01 7F ; font_77 defb 0x7f, 0x01, 0x01, 0x7f, 0x01, 0x01, 0x7f
+0000230B: 01 01 7F    ; 
+0000230E: 7F 01 01 7F ; font_78 defb 0x7f, 0x01, 0x01, 0x7f, 0x00, 0x00, 0x00
+00002312: 00 00 00    ; 
+00002315: 7F 41 41 7F ; font_79 defb 0x7f, 0x41, 0x41, 0x7f, 0x00, 0x00, 0x00
+00002319: 00 00 00    ; 
+0000231C: 7F 09 09 0F ; font_80 defb 0x7f, 0x09, 0x09, 0x0f, 0x00, 0x00, 0x00
+00002320: 00 00 00    ; 
+00002323: 7F 41 C1 7F ; font_81 defb 0x7f, 0x41, 0xc1, 0x7f, 0x00, 0x00, 0x00
+00002327: 00 00 00    ; 
+0000232A: 7F 09 09 77 ; font_82 defb 0x7f, 0x09, 0x09, 0x77, 0x00, 0x00, 0x00
+0000232E: 00 00 00    ; 
+00002331: 6F 49 49 7B ; font_83 defb 0x6f, 0x49, 0x49, 0x7b, 0x00, 0x00, 0x00
+00002335: 00 00 00    ; 
+00002338: 01 01 7F 01 ; font_84 defb 0x01, 0x01, 0x7f, 0x01, 0x01, 0x00, 0x00
+0000233C: 01 00 00    ; 
+0000233F: 7F 40 40 7F ; font_85 defb 0x7f, 0x40, 0x40, 0x7f, 0x00, 0x00, 0x00
+00002343: 00 00 00    ; 
+00002346: 7F 20 10 0F ; font_86 defb 0x7f, 0x20, 0x10, 0x0f, 0x00, 0x00, 0x00
+0000234A: 00 00 00    ; 
+0000234D: 7F 40 40 7F ; font_87 defb 0x7f, 0x40, 0x40, 0x7f, 0x40, 0x40, 0x7f
+00002351: 40 40 7F    ; 
+00002354: 77 08 08 77 ; font_88 defb 0x77, 0x08, 0x08, 0x77, 0x00, 0x00, 0x00
+00002358: 00 00 00    ; 
+0000235B: 6F 48 48 7F ; font_89 defb 0x6f, 0x48, 0x48, 0x7f, 0x00, 0x00, 0x00
+0000235F: 00 00 00    ; 
+00002362: 71 49 49 47 ; font_90 defb 0x71, 0x49, 0x49, 0x47, 0x00, 0x00, 0x00
+00002366: 00 00 00    ; 
+00002369: 7F 41 00 00 ; font_91 defb 0x7f, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00
+0000236D: 00 00 00    ; 
+00002370: 03 04 08 10 ; font_92 defb 0x03, 0x04, 0x08, 0x10, 0x60, 0x00, 0x00
+00002374: 60 00 00    ; 
+00002377: 41 7F 00 00 ; font_93 defb 0x41, 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00
+0000237B: 00 00 00    ; 
+0000237E: 04 02 01 02 ; font_94 defb 0x04, 0x02, 0x01, 0x02, 0x04, 0x00, 0x00
+00002382: 04 00 00    ; 
+00002385: 80 80 80 80 ; font_95 defb 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00
+00002389: 00 00 00    ; 
+0000238C: 03 00 00 00 ; font_96 defb 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002390: 00 00 00    ; 
+00002393: 74 54 54 7C ; font_97 defb 0x74, 0x54, 0x54, 0x7c, 0x00, 0x00, 0x00
+00002397: 00 00 00    ; 
+0000239A: 7F 44 44 7C ; font_98 defb 0x7f, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+0000239E: 00 00 00    ; 
+000023A1: 7C 44 44 6C ; font_99 defb 0x7c, 0x44, 0x44, 0x6c, 0x00, 0x00, 0x00
+000023A5: 00 00 00    ; 
+000023A8: 7C 44 44 7F ; font_100 defb 0x7c, 0x44, 0x44, 0x7f, 0x00, 0x00, 0x00
+000023AC: 00 00 00    ; 
+000023AF: 7C 54 54 5C ; font_101 defb 0x7c, 0x54, 0x54, 0x5c, 0x00, 0x00, 0x00
+000023B3: 00 00 00    ; 
+000023B6: 7F 05 05 01 ; font_102 defb 0x7f, 0x05, 0x05, 0x01, 0x00, 0x00, 0x00
+000023BA: 00 00 00    ; 
+000023BD: BC A4 A4 FC ; font_103 defb 0xbc, 0xa4, 0xa4, 0xfc, 0x00, 0x00, 0x00
+000023C1: 00 00 00    ; 
+000023C4: 7F 04 04 7C ; font_104 defb 0x7f, 0x04, 0x04, 0x7c, 0x00, 0x00, 0x00
+000023C8: 00 00 00    ; 
+000023CB: 7D 00 00 00 ; font_105 defb 0x7d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000023CF: 00 00 00    ; 
+000023D2: 80 FD 00 00 ; font_106 defb 0x80, 0xfd, 0x00, 0x00, 0x00, 0x00, 0x00
+000023D6: 00 00 00    ; 
+000023D9: 7F 04 04 7A ; font_107 defb 0x7f, 0x04, 0x04, 0x7a, 0x00, 0x00, 0x00
+000023DD: 00 00 00    ; 
+000023E0: 7F 00 00 00 ; font_108 defb 0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+000023E4: 00 00 00    ; 
+000023E7: 7C 04 04 7C ; font_109 defb 0x7c, 0x04, 0x04, 0x7c, 0x04, 0x04, 0x7c
+000023EB: 04 04 7C    ; 
+000023EE: 7C 04 04 7C ; font_110 defb 0x7c, 0x04, 0x04, 0x7c, 0x00, 0x00, 0x00
+000023F2: 00 00 00    ; 
+000023F5: 7C 44 44 7C ; font_111 defb 0x7c, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+000023F9: 00 00 00    ; 
+000023FC: FC 44 44 7C ; font_112 defb 0xfc, 0x44, 0x44, 0x7c, 0x00, 0x00, 0x00
+00002400: 00 00 00    ; 
+00002403: 7C 44 44 FC ; font_113 defb 0x7c, 0x44, 0x44, 0xfc, 0x00, 0x00, 0x00
+00002407: 00 00 00    ; 
+0000240A: 7C 04 04 0C ; font_114 defb 0x7c, 0x04, 0x04, 0x0c, 0x00, 0x00, 0x00
+0000240E: 00 00 00    ; 
+00002411: 5C 54 54 74 ; font_115 defb 0x5c, 0x54, 0x54, 0x74, 0x00, 0x00, 0x00
+00002415: 00 00 00    ; 
+00002418: 7F 44 44 60 ; font_116 defb 0x7f, 0x44, 0x44, 0x60, 0x00, 0x00, 0x00
+0000241C: 00 00 00    ; 
+0000241F: 7C 40 40 7C ; font_117 defb 0x7c, 0x40, 0x40, 0x7c, 0x00, 0x00, 0x00
+00002423: 00 00 00    ; 
+00002426: 7C 20 10 0C ; font_118 defb 0x7c, 0x20, 0x10, 0x0c, 0x00, 0x00, 0x00
+0000242A: 00 00 00    ; 
+0000242D: 7C 40 40 7C ; font_119 defb 0x7c, 0x40, 0x40, 0x7c, 0x40, 0x40, 0x7c
+00002431: 40 40 7C    ; 
+00002434: 6C 10 10 6C ; font_120 defb 0x6c, 0x10, 0x10, 0x6c, 0x00, 0x00, 0x00
+00002438: 00 00 00    ; 
+0000243B: BC A0 A0 FC ; font_121 defb 0xbc, 0xa0, 0xa0, 0xfc, 0x00, 0x00, 0x00
+0000243F: 00 00 00    ; 
+00002442: 64 54 54 4C ; font_122 defb 0x64, 0x54, 0x54, 0x4c, 0x00, 0x00, 0x00
+00002446: 00 00 00    ; 
+00002449: 08 3E 41 00 ; font_123 defb 0x08, 0x3e, 0x41, 0x00, 0x00, 0x00, 0x00
+0000244D: 00 00 00    ; 
+00002450: FF 00 00 00 ; font_124 defb 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+00002454: 00 00 00    ; 
+00002457: 41 3E 08 00 ; font_125 defb 0x41, 0x3e, 0x08, 0x00, 0x00, 0x00, 0x00
+0000245B: 00 00 00    ; 
+0000245E: 1C 04 1C 10 ; font_126 defb 0x1c, 0x04, 0x1c, 0x10, 0x1c, 0x00, 0x00
+00002462: 1C 00 00    ; 
+00002465:             ; 
+00002465:             ; INCLUDE generalDefinitions.s
+00002468:             ; ALIGN
+00002468: 01          ; bmask0      DEFB &01
+00002469: 02          ; bmask1      DEFB &02
+0000246A: 04          ; bmask2      DEFB &04
+0000246B: 08          ; bmask3      DEFB &08
+0000246C: 10          ; bmask4      DEFB &10
+0000246D: 20          ; bmask5      DEFB &20
+0000246E: 40          ; bmask6      DEFB &40
+0000246F: 80          ; bmask7      DEFB &80
+00002470: AC000000    ; addr_LCD        DEFW 0xAC00_0000
+00002474: AC0383FF    ; addr_LCD_end    DEFW 0xAC03_83FF
+00002478: 000003C0    ; LCD_width       DEFW 960
+0000247C: 00000018    ; charwidth       DEFW 24
+00002480: 00001E00    ; LCD_linediff    DEFW 7680
+00002484: 00000000    ; WHITE           DEFW     &00
+00002488: 000000FF    ; BLACK           DEFW     &FF
+0000248C: 00000007    ; FONT_WIDTH      DEFW     7
+00002490: 00000008    ; FONT_HEIGHT     DEFW     8
+00002494: 00          ; nullstring      DEFB &00
+00002495: 08 00       ; backspace       DEFB &08,0
+00002497: 09 00       ; HT              DEFB &09,0
+00002499: 0A 00       ; LF              DEFB &0A,0
+0000249B: 0B 00       ; VT              DEFB &0B,0
+0000249D: 0C 00       ; FF              DEFB &0C,0
+0000249F: 0D 00       ; CR              DEFB &0D,0
+000024A4:             ; ALIGN
+000024A4:             ; svc_0           EQU &100 ;halt
+000024A4:             ; svc_1           EQU &101 ;printstr
+000024A4:             ; svc_2           EQU &102 ;get timer
+000024A4:             ; svc_3           EQU &103
+000024A4:             ; 
+000024A4:             ; ALIGN
+000024A4:             ; 
+000024A4:             ; usercode
+000024A4: E28F0004    ; ADRL R0, printme
+000024A8: EF000101    ; SVC svc_1 ;printsr
+000024AC: EF000100    ; SVC svc_0 ;halt
+000024B0: 48 65 6C 6C ; printme DEFB "Hello World!",0
+000024B4: 6F 20 57 6F ; 
+000024B8: 72 6C 64 21 ; 
+000024BC: 00          ; 
+000024BD:             ; INCLUDE lcd.s
+000024BD:             ; ;###############################################
+000024BD:             ; ;# Written By: Sam da Costa                    #
+000024BD:             ; ;# Uni ID: p11469sd                            #
+000024BD:             ; ;# Exercise:  3                                #
+000024BD:             ; ;# Purpose: This file contains the subroutines #
+000024BD:             ; ;# printc and printstr to enable terminal      #
+000024BD:             ; ;# printing                                    #
+000024BD:             ; ;###############################################
+000024BD:             ; 
+000024C0:             ; ALIGN
+000024C0:             ; printc
+000024C0:             ; ;takes parameter R0 <- address of character
+000024C0:             ; ;leaf procedure
+000024C0: E92D1FFE    ; PUSH {R1 - R12}
+000024C4:             ; ;setup
+000024C4: E51F1370    ; LDR         R1, cursorposx
+000024C8: E51F2370    ; LDR         R2, cursorposy
+000024CC: E3A03000    ; MOV         R3, #0
+000024D0: E3E04000    ; MOV         R4, #-1
+000024D4: E24F6074    ; ADRL        R6, bmask0
+000024D8:             ; ; Corrects cursors for newline if needed
+000024D8: E3510028    ; CMP         R1, #40
+000024DC: A2411028    ; SUBGE       R1, R1, #40
+000024E0: A2822001    ; ADDGE       R2, R2, #1
+000024E4:             ; ;calculates base address to draw from
+000024E4: E51F806C    ; LDR         R8, LCD_linediff
+000024E8: E0080298    ; MUL         R8, R8, R2
+000024EC: E51F9078    ; LDR         R9, charwidth
+000024F0: E0090199    ; MUL         R9, R9, R1
+000024F4: E0888009    ; ADD         R8, R8, R9
+000024F8: E51F9090    ; LDR         R9, addr_LCD
+000024FC: E0888009    ; ADD         R8, R8, R9        ;base now in R8, R9 free
+00002500:             ; ;----
+00002500:             ; ;handles incrememts of byte and bit
+00002500:             ; ;this procedure uses byte and bit as x and y respectively
+00002500:             ; next
+00002500: E3540007    ; CMP         R4, #7
+00002504: 03A04000    ; MOVEQ       R4, #0
+00002508: 02833001    ; ADDEQ       R3, R3, #1
+0000250C: 12844001    ; ADDNE       R4, R4, #1
+00002510: E3530007    ; CMP         R3, #7
+00002514: 0A000015    ; BEQ         POSTEND
+00002518:             ; 
+00002518:             ; 
+00002518:             ; 
+00002518:             ; 
+00002518:             ; 
+00002518: E7D05003    ; LDRB        R5, [R0, R3] ;loads the font byte
+0000251C: E7D67004    ; LDRB        R7, [R6, R4] ;loads the mask
+00002520: E0075005    ; AND         R5, R7, R5 ; check the bit
+00002524:             ; 
+00002524:             ; ;calculates address to write to
+00002524: E3A09003    ; MOV         R9, #3
+00002528: E0090399    ; MUL         R9, R9, R3
+0000252C: E51FA0BC    ; LDR         R10, LCD_width
+00002530: E00A049A    ; MUL         R10, R10, R4
+00002534: E089900A    ; ADD         R9, R9, R10
+00002538: E0899008    ; ADD         R9, R9, R8      ;address to write in R9
+0000253C:             ; 
+0000253C: E1550007    ; CMP         R5, R7 ;determine which colour to draw in
+00002540: 0A000000    ; BEQ high
+00002544: 1A000004    ; BNE low
+00002548:             ; 
+00002548:             ; high ;no colour support yet - this would need to be changed
+00002548: E55FA0CC    ; LDRB R10, WHITE
+0000254C: E4C9A001    ; STRB R10, [R9], #1
+00002550: E4C9A001    ; STRB R10, [R9], #1
+00002554: E549A000    ; STRB R10, [R9]
+00002558: EAFFFFE8    ; B next
+0000255C:             ; 
+0000255C:             ; low
+0000255C: E55FA0DC    ; LDRB R10, BLACK
+00002560: E4C9A001    ; STRB R10, [R9], #1
+00002564: E4C9A001    ; STRB R10, [R9], #1
+00002568: E549A000    ; STRB R10, [R9]
+0000256C: EAFFFFE3    ; B next
+00002570:             ; 
+00002570:             ; POSTEND
+00002570:             ; ;draws the 8th blank line
+00002570: E3A0A003    ; MOV   R10, #3
+00002574: E009039A    ; MUL   R9, R10, R3
+00002578: E51FA108    ; LDR   R10, LCD_width
+0000257C: E00A049A    ; MUL   R10, R10, R4
+00002580: E089900A    ; ADD   R9, R9, R10
+00002584: E51FA11C    ; LDR   R10, addr_LCD
+00002588: E089900A    ; ADD   R9, R9, R10
+0000258C: E51FB118    ; LDR   R11, charwidth
+00002590: E00A0B91    ; MUL   R10, R1, R11
+00002594: E08A9009    ; ADD   R9, R10, R9
+00002598: E51FB120    ; LDR   R11, LCD_linediff
+0000259C: E00A0B92    ; MUL   R10, R2, R11
+000025A0: E08A9009    ; ADD   R9, R10, R9
+000025A4:             ; 
+000025A4: E55FA124    ; LDRB  R10, BLACK
+000025A8: E4C9A001    ; STRB  R10, [R9], #1
+000025AC: E4C9A001    ; STRB  R10, [R9], #1
+000025B0: E549A000    ; STRB  R10, [R9]
+000025B4: E2844001    ; ADD   R4, R4, #1
+000025B8: E3540008    ; CMP   R4, #8 ;re-uses bit counter reg
+000025BC: 1AFFFFEB    ; BNE POSTEND
+000025C0:             ; 
+000025C0:             ; ;update cursor positions below
+000025C0: E2811001    ; ADD   R1, R1, #1
+000025C4: E24FCE47    ; ADRL  R12, cursorposx
+000025C8: E50C1000    ; STR   R1, [R12]
+000025CC: E24FC074    ; ADRL  R12, cursorposy
+000025D0: E24CCB01    ; 
+000025D4: E50C2000    ; STR   R2, [R12]
+000025D8:             ; 
+000025D8:             ; 
+000025D8:             ; 
+000025D8:             ; ;return to program
+000025D8: E8BD1FFE    ; POP {R1 - R12}
+000025DC: E1A0F00E    ; MOV PC, LR
+000025E0:             ; 
+000025E0:             ; ALIGN
+000025E0:             ; printstr
+000025E0:             ; ; address at R0
+000025E0:             ; ; assume LR was pushed
+000025E0: E92D01FE    ; PUSH {R1 - R8}
+000025E4: E92D4000    ; PUSH {LR}
+000025E8: E1A08000    ; MOV           R8, R0        ; R0 will be overwritten soon
+000025EC:             ; printnextc
+000025EC: E4D81001    ; LDRB          R1, [R8], #1  ; get the next character
+000025F0: E2512020    ; SUBS          R2, R1, #&20  ; subtract to get the ascii value to a known base
+000025F4: BA000006    ; BLT control                 ; if branch taken: char is a control symbol else: char is an ascii 
+                      ; character
+000025F8: E24F3034    ; ADRL          R3, font_32
+000025FC: E2433B01    ; 
+00002600: E3A04007    ; MOV           R4, #7
+00002604: E0020492    ; MUL           R2, R2, R4    ; calculate offset to correct font
+00002608: E0830002    ; ADD           R0, R3, R2
+0000260C: EBFFFFAB    ; BL printc
+00002610: EAFFFFF5    ; B printnextc
+00002614:             ; 
+00002614:             ; 
+00002614:             ; ; determines which control code needs executing
+00002614:             ; control
+00002614: E3510000    ; CMP           R1, #00
+00002618: 0A000046    ; BEQ           exitstring      ; terminate if 0 seen
+0000261C:             ; 
+0000261C: E3510008    ; CMP           R1, #&08
+00002620: 0A000009    ; BEQ           c_backspace
+00002624:             ; 
+00002624: E3510009    ; CMP           R1, #&09
+00002628: 0A000017    ; BEQ           c_HT
+0000262C:             ; 
+0000262C: E351000A    ; CMP           R1, #&0A
+00002630: 0A000021    ; BEQ           c_LF
+00002634:             ; 
+00002634: E351000B    ; CMP           R1, #&0B
+00002638: 0A000025    ; BEQ           c_VT
+0000263C:             ; 
+0000263C: E351000C    ; CMP           R1, #&0C
+00002640: 0A00002A    ; BEQ           c_FF
+00002644:             ; 
+00002644: E351000D    ; CMP           R1, #&0D
+00002648: 0A000035    ; BEQ           c_CR
+0000264C:             ; 
+0000264C:             ; 
+0000264C:             ; ;the following methods change the cursorposx, cursorposy values
+0000264C:             ; ;such that the cursor is in the correct position after a control code
+0000264C:             ; ;using R5,6,7
+0000264C:             ; c_backspace
+0000264C: E51F54F8    ; LDR     R5, cursorposx
+00002650: E51F64F8    ; LDR     R6, cursorposy
+00002654: E3550000    ; CMP     R5, #0
+00002658: 1A000004    ; BNE     subtract
+0000265C: E3560000    ; CMP     R6, #0
+00002660: 0A000003    ; BEQ     quitcontrol
+00002664: E2466001    ; SUB     R6, R6, #1
+00002668: E3A05027    ; MOV     R5, #39
+0000266C: EA000000    ; B quitcontrol
+00002670:             ; 
+00002670:             ; subtract
+00002670: E2455001    ; SUB     R5, R5, #1
+00002674:             ; quitcontrol
+00002674: E24F7E52    ; ADRL    R7, cursorposx
+00002678: E5075000    ; STR     R5, [R7]
+0000267C: E24F7F49    ; ADRL    R7, cursorposy
+00002680: E2477B01    ; 
+00002684: E5076000    ; STR     R6, [R7]
+00002688: EAFFFFD7    ; B printnextc
+0000268C:             ; 
+0000268C:             ; c_HT
+0000268C: E51F5538    ; LDR     R5, cursorposx
+00002690: E51F6538    ; LDR     R6, cursorposy
+00002694: E2855001    ; ADD     R5, R5, #1
+00002698: E3550028    ; CMP     R5, #40
+0000269C: A2455028    ; SUBGE   R5, R5, #40
+000026A0: A2866001    ; ADDGE   R6, R6, #1
+000026A4: E24F7E55    ; ADRL    R7, cursorposx
+000026A8: E5075000    ; STR     R5, [R7]
+000026AC: E24F7F55    ; ADRL    R7, cursorposy
+000026B0: E2477B01    ; 
+000026B4: E5076000    ; STR     R6, [R7]
+000026B8: EAFFFFCB    ; B printnextc
+000026BC:             ; 
+000026BC:             ; c_LF
+000026BC: E51F6564    ; LDR     R6, cursorposy
+000026C0: E356001D    ; CMP     R6, #29
+000026C4: 12866001    ; ADDNE   R6, R6, #1
+000026C8: E24F7E57    ; ADRL    R7, cursorposy
+000026CC: E5076000    ; STR     R6, [R7]
+000026D0: EAFFFFC5    ; B printnextc
+000026D4:             ; 
+000026D4:             ; c_VT
+000026D4: E51F657C    ; LDR     R6, cursorposy
+000026D8: E3560000    ; CMP     R6, #0
+000026DC: C2466001    ; SUBGT   R6, R6, #1
+000026E0: E24F7F62    ; ADRL    R7, cursorposy
+000026E4: E2477B01    ; 
+000026E8: E5076000    ; STR     R6, [R7]
+000026EC: EAFFFFBE    ; B printnextc
+000026F0:             ; 
+000026F0:             ; c_FF
+000026F0: E51F5288    ; LDR     R5, addr_LCD
+000026F4: E55F6274    ; LDRB    R6, BLACK
+000026F8: E51F728C    ; LDR     R7, addr_LCD_end
+000026FC:             ; screenblankloop
+000026FC: E4C56001    ; STRB    R6, [R5], #1
+00002700: E1550007    ; CMP     R5, R7
+00002704: 1AFFFFFC    ; BNE screenblankloop
+00002708: E3A05000    ; MOV     R5, #0
+0000270C: E24F6F6E    ; ADRL    R6, cursorposx
+00002710: E2466B01    ; 
+00002714: E5065000    ; STR     R5, [R6]
+00002718: E24F6D17    ; ADRL    R6, cursorposy
+0000271C: E5065000    ; STR     R5, [R6]
+00002720: EAFFFFB1    ; B printnextc
+00002724:             ; 
+00002724:             ; c_CR
+00002724: E3A06000    ; MOV     R6, #0
+00002728: E24F7F75    ; ADRL    R7, cursorposx
+0000272C: E2477B01    ; 
+00002730: E5076000    ; STR     R6, [R7]
+00002734: EAFFFFAC    ; B printnextc
+00002738:             ; 
+00002738:             ; ; cleanup and exit
+00002738:             ; exitstring
+00002738: E8BD4000    ; POP {LR}
+0000273C: E8BD01FE    ; POP {R1 - R8}
+00002740: E1A0F00E    ; MOV PC, LR
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; ;---------------------------------------
+00002744:             ; ;  DEFINITIONS
+00002744:             ; ;---------------------------------------
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; 
+00002744:             ; align
+00002744:             ; 
+00002744:             ; 
+
+Symbol Table: Labels
+: SVC_MAX                           00000020  Local -- ARM
+: reset_handler                     00000024  Local -- ARM
+: undefined_instruction_handler     00000084  Local -- ARM
+: svc_handler                       00000094  Local -- ARM
+: svc_entry                         000000A4  Local -- ARM
+: jump_t                            000000BC  Local -- ARM
+: SVC_0                             000000CC  Local -- ARM
+: SVC_unknown                       000000CC  Local -- ARM
+: SVC_1                             000000D0  Local -- ARM
+: addr_timer                        000000E4  Local -- ARM
+: SVC_2                             000000E8  Local -- ARM
+: SVC_3                             000000FC  Local -- ARM
+: prefetch_abort_handler            000000FC  Local -- ARM
+: data_abort                        00000124  Local -- ARM
+: IRQ_handler                       0000014C  Local -- ARM
+: FIQ_handler                       00000150  Local -- ARM
+: halt                              00000154  Local -- ARM
+: stack_user                        0000015C  Local -- ARM
+: stackend_user                     0000115C  Local -- ARM
+: stack_svc                         0000115C  Local -- ARM
+: stackend_svc                      0000215C  Local -- ARM
+: data                              0000215C  Local -- ARM
+: cursorposx                        0000215C  Local -- ARM
+: cursorposy                        00002160  Local -- ARM
+: MemoryError_pre                   00002164  Local -- ARM
+: MemoryError_dat                   00002188  Local -- ARM
+: UndefinedError                    000021A8  Local -- ARM
+: font_32                           000021CC  Local -- ARM
+: font_33                           000021D3  Local -- ARM
+: font_34                           000021DA  Local -- ARM
+: font_35                           000021E1  Local -- ARM
+: font_36                           000021E8  Local -- ARM
+: font_37                           000021EF  Local -- ARM
+: font_38                           000021F6  Local -- ARM
+: font_39                           000021FD  Local -- ARM
+: font_40                           00002204  Local -- ARM
+: font_41                           0000220B  Local -- ARM
+: font_42                           00002212  Local -- ARM
+: font_43                           00002219  Local -- ARM
+: font_44                           00002220  Local -- ARM
+: font_45                           00002227  Local -- ARM
+: font_46                           0000222E  Local -- ARM
+: font_47                           00002235  Local -- ARM
+: font_48                           0000223C  Local -- ARM
+: font_49                           00002243  Local -- ARM
+: font_50                           0000224A  Local -- ARM
+: font_51                           00002251  Local -- ARM
+: font_52                           00002258  Local -- ARM
+: font_53                           0000225F  Local -- ARM
+: font_54                           00002266  Local -- ARM
+: font_55                           0000226D  Local -- ARM
+: font_56                           00002274  Local -- ARM
+: font_57                           0000227B  Local -- ARM
+: font_58                           00002282  Local -- ARM
+: font_59                           00002289  Local -- ARM
+: font_60                           00002290  Local -- ARM
+: font_61                           00002297  Local -- ARM
+: font_62                           0000229E  Local -- ARM
+: font_63                           000022A5  Local -- ARM
+: font_64                           000022AC  Local -- ARM
+: font_65                           000022B3  Local -- ARM
+: font_66                           000022BA  Local -- ARM
+: font_67                           000022C1  Local -- ARM
+: font_68                           000022C8  Local -- ARM
+: font_69                           000022CF  Local -- ARM
+: font_70                           000022D6  Local -- ARM
+: font_71                           000022DD  Local -- ARM
+: font_72                           000022E4  Local -- ARM
+: font_73                           000022EB  Local -- ARM
+: font_74                           000022F2  Local -- ARM
+: font_75                           000022F9  Local -- ARM
+: font_76                           00002300  Local -- ARM
+: font_77                           00002307  Local -- ARM
+: font_78                           0000230E  Local -- ARM
+: font_79                           00002315  Local -- ARM
+: font_80                           0000231C  Local -- ARM
+: font_81                           00002323  Local -- ARM
+: font_82                           0000232A  Local -- ARM
+: font_83                           00002331  Local -- ARM
+: font_84                           00002338  Local -- ARM
+: font_85                           0000233F  Local -- ARM
+: font_86                           00002346  Local -- ARM
+: font_87                           0000234D  Local -- ARM
+: font_88                           00002354  Local -- ARM
+: font_89                           0000235B  Local -- ARM
+: font_90                           00002362  Local -- ARM
+: font_91                           00002369  Local -- ARM
+: font_92                           00002370  Local -- ARM
+: font_93                           00002377  Local -- ARM
+: font_94                           0000237E  Local -- ARM
+: font_95                           00002385  Local -- ARM
+: font_96                           0000238C  Local -- ARM
+: font_97                           00002393  Local -- ARM
+: font_98                           0000239A  Local -- ARM
+: font_99                           000023A1  Local -- ARM
+: font_100                          000023A8  Local -- ARM
+: font_101                          000023AF  Local -- ARM
+: font_102                          000023B6  Local -- ARM
+: font_103                          000023BD  Local -- ARM
+: font_104                          000023C4  Local -- ARM
+: font_105                          000023CB  Local -- ARM
+: font_106                          000023D2  Local -- ARM
+: font_107                          000023D9  Local -- ARM
+: font_108                          000023E0  Local -- ARM
+: font_109                          000023E7  Local -- ARM
+: font_110                          000023EE  Local -- ARM
+: font_111                          000023F5  Local -- ARM
+: font_112                          000023FC  Local -- ARM
+: font_113                          00002403  Local -- ARM
+: font_114                          0000240A  Local -- ARM
+: font_115                          00002411  Local -- ARM
+: font_116                          00002418  Local -- ARM
+: font_117                          0000241F  Local -- ARM
+: font_118                          00002426  Local -- ARM
+: font_119                          0000242D  Local -- ARM
+: font_120                          00002434  Local -- ARM
+: font_121                          0000243B  Local -- ARM
+: font_122                          00002442  Local -- ARM
+: font_123                          00002449  Local -- ARM
+: font_124                          00002450  Local -- ARM
+: font_125                          00002457  Local -- ARM
+: font_126                          0000245E  Local -- ARM
+: bmask0                            00002468  Local -- ARM
+: bmask1                            00002469  Local -- ARM
+: bmask2                            0000246A  Local -- ARM
+: bmask3                            0000246B  Local -- ARM
+: bmask4                            0000246C  Local -- ARM
+: bmask5                            0000246D  Local -- ARM
+: bmask6                            0000246E  Local -- ARM
+: bmask7                            0000246F  Local -- ARM
+: addr_LCD                          00002470  Local -- ARM
+: addr_LCD_end                      00002474  Local -- ARM
+: LCD_width                         00002478  Local -- ARM
+: charwidth                         0000247C  Local -- ARM
+: LCD_linediff                      00002480  Local -- ARM
+: WHITE                             00002484  Local -- ARM
+: BLACK                             00002488  Local -- ARM
+: FONT_WIDTH                        0000248C  Local -- ARM
+: FONT_HEIGHT                       00002490  Local -- ARM
+: nullstring                        00002494  Local -- ARM
+: backspace                         00002495  Local -- ARM
+: HT                                00002497  Local -- ARM
+: LF                                00002499  Local -- ARM
+: VT                                0000249B  Local -- ARM
+: FF                                0000249D  Local -- ARM
+: CR                                0000249F  Local -- ARM
+: svc_0                             00000100  Value
+: svc_1                             00000101  Value
+: svc_2                             00000102  Value
+: svc_3                             00000103  Value
+: usercode                          000024A4  Local -- ARM
+: printme                           000024B0  Local -- ARM
+: printc                            000024C0  Local -- ARM
+: next                              00002500  Local -- ARM
+: high                              00002548  Local -- ARM
+: low                               0000255C  Local -- ARM
+: POSTEND                           00002570  Local -- ARM
+: printstr                          000025E0  Local -- ARM
+: printnextc                        000025EC  Local -- ARM
+: control                           00002614  Local -- ARM
+: c_backspace                       0000264C  Local -- ARM
+: subtract                          00002670  Local -- ARM
+: quitcontrol                       00002674  Local -- ARM
+: c_HT                              0000268C  Local -- ARM
+: c_LF                              000026BC  Local -- ARM
+: c_VT                              000026D4  Local -- ARM
+: c_FF                              000026F0  Local -- ARM
+: screenblankloop                   000026FC  Local -- ARM
+: c_CR                              00002724  Local -- ARM
+: exitstring                        00002738  Local -- ARM

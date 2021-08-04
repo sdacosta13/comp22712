@@ -1,4 +1,11 @@
-
+;###############################################
+;# Written By: Sam da Costa                    #
+;# Uni ID: p11469sd                            #
+;# Exercise:  3                                #
+;# Purpose: This file contains the subroutines #
+;# printc and printstr to enable terminal      #
+;# printing                                    #
+;###############################################
 printc
 ;takes parameter R0 <- address of character
 ;leaf procedure

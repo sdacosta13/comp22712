@@ -1,4 +1,11 @@
 KMD
+00000000:             ; ;############################################
+00000000:             ; ;# Written By: Sam da Costa                 #
+00000000:             ; ;# Uni ID: p11469sd                         #
+00000000:             ; ;# Exercise:  3                             #
+00000000:             ; ;# Purpose: This file demos different parts #
+00000000:             ; ;# of the lcd module                        #
+00000000:             ; ;############################################
 00000000: E28FDE5A    ; ADRL      SP, stackend ;initialise stack
 00000004: E28DD801    ; 
 00000008:             ; 
@@ -36,7 +43,14 @@ KMD
 0000006F: 00          ; 
 00000070:             ; 
 00000070:             ; INCLUDE lcd.s
-00000070:             ; 
+00000070:             ; ;###############################################
+00000070:             ; ;# Written By: Sam da Costa                    #
+00000070:             ; ;# Uni ID: p11469sd                            #
+00000070:             ; ;# Exercise:  3                                #
+00000070:             ; ;# Purpose: This file contains the subroutines #
+00000070:             ; ;# printc and printstr to enable terminal      #
+00000070:             ; ;# printing                                    #
+00000070:             ; ;###############################################
 00000070:             ; printc
 00000070:             ; ;takes parameter R0 <- address of character
 00000070:             ; ;leaf procedure
